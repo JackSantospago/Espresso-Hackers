@@ -35,6 +35,10 @@ class S {
     required this.tabFarm,
     required this.tabOfficer,
     required this.tabHelp,
+    required this.tabGrow,
+    required this.tabSell,
+    required this.sellIntro,
+    required this.sellComing,
     required this.loadingModel,
     required this.loadFailed,
     required this.welcomeTitle,
@@ -134,7 +138,11 @@ class S {
   final String setupIndexing, setupFailed, retry;
 
   // Tabs
-  final String tabAsk, tabFarm, tabOfficer, tabHelp;
+  final String tabAsk, tabFarm, tabOfficer, tabHelp, tabGrow, tabSell;
+
+  // Sell (placeholder until there is a market feature)
+  final String sellIntro;
+  final List<String> sellComing;
 
   // Chat
   final String loadingModel, loadFailed, welcomeTitle, welcomeBody;
@@ -204,6 +212,14 @@ final S _en = S(
   tabFarm: 'My farm',
   tabOfficer: 'Officer',
   tabHelp: 'Help',
+  tabGrow: 'Grow',
+  tabSell: 'Sell',
+  sellIntro: 'Selling your harvest is coming soon. Here is what this page will help with:',
+  sellComing: [
+    'Keep a record of what you harvested and sold.',
+    'Find your cooperative and buyers near you.',
+    'Get your coffee ready for the buyer: drying, sorting, storage.',
+  ],
   loadingModel: 'Loading the assistant…',
   loadFailed: 'The assistant could not start.',
   welcomeTitle: 'How can I help your farm today?',
@@ -345,6 +361,14 @@ final S _sw = S(
   tabFarm: 'Shamba langu',
   tabOfficer: 'Afisa',
   tabHelp: 'Msaada',
+  tabGrow: 'Kilimo',
+  tabSell: 'Uza',
+  sellIntro: 'Kuuza mavuno yako kunakuja hivi karibuni. Ukurasa huu utakusaidia:',
+  sellComing: [
+    'Kuweka kumbukumbu ya ulichovuna na kuuza.',
+    'Kupata chama chako cha ushirika na wanunuzi karibu nawe.',
+    'Kuandaa kahawa yako kwa mnunuzi: kukausha, kuchambua, kuhifadhi.',
+  ],
   loadingModel: 'Inapakia msaidizi…',
   loadFailed: 'Msaidizi hakuweza kuanza.',
   welcomeTitle: 'Nikusaidie nini shambani leo?',
@@ -487,6 +511,14 @@ final S _fr = S(
   tabFarm: 'Ma ferme',
   tabOfficer: 'Conseiller',
   tabHelp: 'Aide',
+  tabGrow: 'Cultiver',
+  tabSell: 'Vendre',
+  sellIntro: 'La vente de votre récolte arrive bientôt. Cette page vous aidera à :',
+  sellComing: [
+    'Garder une trace de ce que vous avez récolté et vendu.',
+    'Trouver votre coopérative et des acheteurs près de chez vous.',
+    "Préparer votre café pour l'acheteur : séchage, tri, stockage.",
+  ],
   loadingModel: "Chargement de l'assistant…",
   loadFailed: "L'assistant n'a pas pu démarrer.",
   welcomeTitle: "Comment puis-je aider votre ferme aujourd'hui ?",

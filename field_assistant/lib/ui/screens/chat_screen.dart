@@ -9,8 +9,10 @@ import '../../services/leaf_classifier.dart'
 import '../widgets/composer.dart';
 import '../widgets/language_picker.dart';
 import '../widgets/message_bubble.dart';
+import '../widgets/potato_mascot.dart';
 
-/// The "Ask" tab: the conversation with the on-device assistant.
+/// The "Ask" tab, laid out like a chat with Claude: a new chat shows the potato
+/// and a greeting; once the farmer sends something it gives way to the conversation.
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key, required this.assistant});
   final Assistant assistant;
@@ -93,6 +95,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final bytes = await file.readAsBytes();
     final note = _input.text;
     _input.clear();
+    if (mounted) FocusScope.of(context).unfocus();
     await _a.sendPhoto(bytes, note);
   }
 
@@ -119,38 +122,41 @@ class _ChatScreenState extends State<ChatScreen> {
     final s = context.s;
     return ListenableBuilder(
       listenable: _a,
-      builder: (context, _) => Scaffold(
-        appBar: AppBar(
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(s.appName),
-              _OfflineBadge(label: '${s.offlineBadge} · ${activeLlm.label}'),
-            ],
-          ),
-          actions: [
-            const LanguageMenuButton(),
-            if (_a.turns.isNotEmpty)
+      builder: (context, _) {
+        final welcome = _a.ready && _a.turns.isEmpty;
+        return Scaffold(
+          appBar: AppBar(
+            centerTitle: true,
+            leading: const LanguageMenuButton(),
+            title: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(s.appName, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                _OfflineBadge(label: '${s.offlineBadge} · ${activeLlm.label}'),
+              ],
+            ),
+            actions: [
               IconButton(
                 tooltip: s.newChat,
-                onPressed: _a.busy ? null : _a.clearConversation,
-                icon: const Icon(Icons.add_comment_outlined),
+                onPressed: _a.busy || _a.turns.isEmpty ? null : _a.clearConversation,
+                icon: const Icon(Icons.edit_square),
               ),
-          ],
-        ),
-        body: Column(
-          children: [
-            Expanded(child: _body(context)),
-            if (_a.status.isNotEmpty && _a.ready) _StatusStrip(text: _a.status),
-            Composer(
-              controller: _input,
-              enabled: _a.canSend,
-              onSend: _send,
-              onPhoto: _pickPhoto,
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
+          body: Column(
+            children: [
+              Expanded(child: _body(context)),
+              if (welcome) _Suggestions(onAsk: _send),
+              Composer(
+                controller: _input,
+                enabled: _a.canSend,
+                onSend: _send,
+                onPhoto: _pickPhoto,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -174,7 +180,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         );
       case AssistantState.ready:
-        if (_a.turns.isEmpty) return _Welcome(onAsk: _send, onPhoto: _pickPhoto);
+        if (_a.turns.isEmpty) return const _Welcome();
         final turns = _a.turns;
         return ListView.builder(
           controller: _scroll,
@@ -187,6 +193,7 @@ class _ChatScreenState extends State<ChatScreen> {
             return MessageBubble(
               turn: t,
               streaming: streaming,
+              status: streaming ? _a.status : '',
               onSendForReview: t.reviewPhoto != null && !t.queued && !streaming ? () => _confirmReview(t) : null,
             );
           },
@@ -195,73 +202,55 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 }
 
-/// Empty conversation: greeting, a big photo action and tap-to-ask questions,
-/// so a first-time user never faces a blank screen.
+/// New chat: the potato and a greeting in the middle of the screen.
 class _Welcome extends StatelessWidget {
-  const _Welcome({required this.onAsk, required this.onPhoto});
-  final void Function(String) onAsk;
-  final VoidCallback onPhoto;
+  const _Welcome();
 
   @override
   Widget build(BuildContext context) {
     final s = context.s;
     final c = Theme.of(context).colorScheme;
     final t = Theme.of(context).textTheme;
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-      children: [
-        CircleAvatar(
-          radius: 36,
-          backgroundColor: c.primaryContainer,
-          child: Icon(Icons.eco, size: 40, color: c.onPrimaryContainer),
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const PotatoMascot(size: 150),
+          const SizedBox(height: 20),
+          Text(s.welcomeTitle,
+              textAlign: TextAlign.center, style: t.headlineSmall?.copyWith(fontWeight: FontWeight.w500, height: 1.25)),
+          const SizedBox(height: 10),
+          Text(s.welcomeBody, textAlign: TextAlign.center, style: t.bodyMedium?.copyWith(color: c.onSurfaceVariant)),
+        ]),
+      ),
+    );
+  }
+}
+
+/// Tap-to-ask questions in a row just above the input, only on a new chat.
+class _Suggestions extends StatelessWidget {
+  const _Suggestions({required this.onAsk});
+  final void Function(String) onAsk;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
+    final suggestions = context.s.suggestions;
+    return SizedBox(
+      height: 44,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        itemCount: suggestions.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, i) => ActionChip(
+          label: Text(suggestions[i]),
+          onPressed: () => onAsk(suggestions[i]),
+          backgroundColor: c.surfaceContainerLow,
+          side: BorderSide(color: c.outlineVariant),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         ),
-        const SizedBox(height: 16),
-        Text(s.welcomeTitle, textAlign: TextAlign.center, style: t.headlineSmall?.copyWith(fontWeight: FontWeight.w600)),
-        const SizedBox(height: 8),
-        Text(s.welcomeBody, textAlign: TextAlign.center, style: t.bodyLarge?.copyWith(color: c.onSurfaceVariant)),
-        const SizedBox(height: 24),
-        Card(
-          color: c.secondaryContainer,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: onPhoto,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(children: [
-                Icon(Icons.photo_camera, size: 32, color: c.onSecondaryContainer),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(s.checkLeaf,
-                      style: t.titleMedium?.copyWith(color: c.onSecondaryContainer, fontWeight: FontWeight.w600)),
-                ),
-                Icon(Icons.chevron_right, color: c.onSecondaryContainer),
-              ]),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        for (final q in s.suggestions)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Card(
-              child: InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: () => onAsk(q),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  child: Row(children: [
-                    Icon(Icons.chat_bubble_outline, size: 20, color: c.primary),
-                    const SizedBox(width: 12),
-                    Expanded(child: Text(q, style: t.bodyLarge)),
-                  ]),
-                ),
-              ),
-            ),
-          ),
-        const SizedBox(height: 8),
-        Text(s.answersLanguageNote,
-            textAlign: TextAlign.center, style: t.labelMedium?.copyWith(color: c.onSurfaceVariant)),
-      ],
+      ),
     );
   }
 }
@@ -284,26 +273,6 @@ class _OfflineBadge extends StatelessWidget {
         ),
       ),
     ]);
-  }
-}
-
-class _StatusStrip extends StatelessWidget {
-  const _StatusStrip({required this.text});
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = Theme.of(context).colorScheme;
-    return Container(
-      width: double.infinity,
-      color: c.surfaceContainer,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(children: [
-        const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
-        const SizedBox(width: 10),
-        Expanded(child: Text(text, style: Theme.of(context).textTheme.bodySmall)),
-      ]),
-    );
   }
 }
 

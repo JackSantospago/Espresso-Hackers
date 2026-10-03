@@ -4,11 +4,11 @@ import '../../core/app_settings.dart';
 import '../../services/assistant.dart';
 import '../farm_data.dart';
 import 'chat_screen.dart';
+import 'grow_screen.dart';
 import 'help_screen.dart';
-import 'memory_screen.dart';
-import 'outbox_screen.dart';
+import 'sell_screen.dart';
 
-/// Bottom navigation: Ask · My farm · Officer · Help.
+/// Bottom navigation, always visible: Ask · Grow · Sell · Help.
 /// Owns the [Assistant] so the model stays loaded while switching tabs.
 /// Pass [assistant] and [data] to run the screens on fake data (main_preview.dart).
 class HomeShell extends StatefulWidget {
@@ -24,7 +24,7 @@ class _HomeShellState extends State<HomeShell> {
   Assistant? _assistant;
   int _tab = 0;
 
-  /// Bumped on every tab change so My farm / Officer reload their lists.
+  /// Bumped on every tab change so Grow reloads its lists.
   int _visit = 0;
 
   @override
@@ -50,8 +50,8 @@ class _HomeShellState extends State<HomeShell> {
     final a = _assistant!;
     final key = ValueKey('$_tab-$_visit');
     final Widget other = switch (_tab) {
-      1 => MemoryScreen(key: key, assistant: a, data: widget.data),
-      2 => OutboxScreen(key: key, assistant: a, data: widget.data),
+      1 => GrowScreen(key: key, assistant: a, data: widget.data),
+      2 => SellScreen(key: key),
       3 => HelpScreen(key: key, assistant: a),
       _ => const SizedBox.shrink(),
     };
@@ -75,21 +75,17 @@ class _HomeShellState extends State<HomeShell> {
             ),
             NavigationDestination(
               icon: Badge(
-                isLabelVisible: a.memoryCount > 0,
-                label: Text('${a.memoryCount}'),
-                child: const Icon(Icons.agriculture_outlined),
-              ),
-              selectedIcon: const Icon(Icons.agriculture),
-              label: s.tabFarm,
-            ),
-            NavigationDestination(
-              icon: Badge(
                 isLabelVisible: a.outboxCount > 0,
                 label: Text('${a.outboxCount}'),
-                child: const Icon(Icons.support_agent_outlined),
+                child: const Icon(Icons.eco_outlined),
               ),
-              selectedIcon: const Icon(Icons.support_agent),
-              label: s.tabOfficer,
+              selectedIcon: const Icon(Icons.eco),
+              label: s.tabGrow,
+            ),
+            NavigationDestination(
+              icon: const Icon(Icons.storefront_outlined),
+              selectedIcon: const Icon(Icons.storefront),
+              label: s.tabSell,
             ),
             NavigationDestination(
               icon: const Icon(Icons.help_outline),

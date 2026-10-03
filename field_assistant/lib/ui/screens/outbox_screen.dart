@@ -10,9 +10,12 @@ import '../farm_data.dart';
 /// "Officer": photos the farmer chose to send for human review. She can see
 /// everything queued, send it now, or delete it before it goes.
 class OutboxScreen extends StatefulWidget {
-  const OutboxScreen({super.key, required this.assistant, this.data = const FarmData()});
+  const OutboxScreen({super.key, required this.assistant, this.data = const FarmData(), this.embedded = false});
   final Assistant assistant;
   final FarmData data;
+
+  /// Shown as a tab inside Grow: no app bar of its own.
+  final bool embedded;
 
   @override
   State<OutboxScreen> createState() => _OutboxScreenState();
@@ -74,7 +77,7 @@ class _OutboxScreenState extends State<OutboxScreen> {
     final pending = items?.where((i) => !i.sent).length ?? 0;
 
     return Scaffold(
-      appBar: AppBar(title: Text(s.outboxTitle)),
+      appBar: widget.embedded ? null : AppBar(title: Text(s.outboxTitle)),
       body: items == null
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(

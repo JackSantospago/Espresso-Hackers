@@ -4,17 +4,21 @@ import '../../core/app_settings.dart';
 import '../../core/config.dart';
 import '../../services/assistant.dart';
 import 'diagnosis_card.dart';
+import 'potato_mascot.dart';
 
-/// One message. Farmer messages sit on the right; assistant replies on the
-/// left with their grounding (sources, match strength) and fail-safes
+/// One message. Farmer messages are bubbles on the right; assistant replies
+/// are plain text across the screen (like a chat with Claude), with their grounding (sources, match strength) and fail-safes
 /// (not sure / weak match / photo caution) shown as distinct, visible blocks.
 class MessageBubble extends StatelessWidget {
-  const MessageBubble({super.key, required this.turn, this.streaming = false, this.onSendForReview});
+  const MessageBubble({super.key, required this.turn, this.streaming = false, this.status = '', this.onSendForReview});
 
   final ChatTurn turn;
 
   /// This reply is still being generated.
   final bool streaming;
+
+  /// What the assistant is doing right now (searching, thinking…), shown before the first words.
+  final String status;
 
   /// Non-null when the farmer can send this photo to the extension officer.
   final VoidCallback? onSendForReview;
@@ -27,17 +31,12 @@ class MessageBubble extends StatelessWidget {
     return Align(
       alignment: Alignment.centerRight,
       child: Container(
-        margin: const EdgeInsets.only(top: 10, left: 48),
-        padding: const EdgeInsets.all(12),
+        margin: const EdgeInsets.only(top: 16, left: 56),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         constraints: const BoxConstraints(maxWidth: 520),
         decoration: BoxDecoration(
-          color: c.primaryContainer,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(18),
-            topRight: Radius.circular(18),
-            bottomLeft: Radius.circular(18),
-            bottomRight: Radius.circular(4),
-          ),
+          color: c.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -53,7 +52,7 @@ class MessageBubble extends StatelessWidget {
               ),
             SelectableText(
               turn.text,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: c.onPrimaryContainer),
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: c.onSurface),
             ),
           ],
         ),
@@ -65,33 +64,21 @@ class MessageBubble extends StatelessWidget {
     final s = context.s;
     final c = Theme.of(context).colorScheme;
     final t = Theme.of(context).textTheme;
+    // Nothing to show yet: the potato is thinking.
+    if (turn.text.isEmpty && turn.diagnosis == null) {
+      return _Thinking(status: status.isEmpty ? s.statusThinking : status);
+    }
     return Padding(
-      padding: const EdgeInsets.only(top: 10, right: 24),
+      padding: const EdgeInsets.only(top: 18, left: 4, right: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: c.secondaryContainer,
-            child: Icon(Icons.eco, size: 18, color: c.onSecondaryContainer),
-          ),
-          const SizedBox(width: 8),
           Flexible(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  constraints: const BoxConstraints(maxWidth: 560),
-                  decoration: BoxDecoration(
-                    color: c.surfaceContainerHigh,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(4),
-                      topRight: Radius.circular(18),
-                      bottomLeft: Radius.circular(18),
-                      bottomRight: Radius.circular(18),
-                    ),
-                  ),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 640),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
@@ -105,9 +92,9 @@ class MessageBubble extends StatelessWidget {
                         const SizedBox(height: 8),
                       ],
                       if (turn.text.isEmpty)
-                        const _Typing()
+                        _Thinking(status: status.isEmpty ? s.statusThinking : status, inline: true)
                       else
-                        SelectableText(turn.text, style: t.bodyLarge),
+                        SelectableText(turn.text, style: t.bodyLarge?.copyWith(height: 1.45)),
                       if (turn.warning.isNotEmpty) ...[
                         const SizedBox(height: 10),
                         _Notice(icon: Icons.report_outlined, text: turn.warning, color: c.tertiary),
@@ -269,13 +256,28 @@ class _Notice extends StatelessWidget {
       );
 }
 
-class _Typing extends StatelessWidget {
-  const _Typing();
+/// The potato bobbing next to what the assistant is doing ("Thinking…").
+class _Thinking extends StatelessWidget {
+  const _Thinking({required this.status, this.inline = false});
+  final String status;
+  final bool inline;
 
   @override
-  Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
-        const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
+    return Padding(
+      padding: EdgeInsets.only(top: inline ? 0 : 18, left: inline ? 0 : 4),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        const PotatoMascot(size: 36, animate: true),
         const SizedBox(width: 10),
-        Text(context.s.statusThinking, style: Theme.of(context).textTheme.bodyMedium),
-      ]);
+        Flexible(
+          child: Text(status,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: c.onSurfaceVariant, fontStyle: FontStyle.italic)),
+        ),
+      ]),
+    );
+  }
 }
