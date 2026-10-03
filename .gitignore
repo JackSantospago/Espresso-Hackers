@@ -1,0 +1,24 @@
+# macOS
+.DS_Store
+
+# Secrets — never commit Hugging Face tokens or keys
+.env
+.env.*
+*.keystore
+*.jks
+key.properties
+
+# Model weights (download at runtime or side-load; far too big for git)
+*.litertlm
+*.task
+*.tflite
+*.gguf
+*.onnx
+*.onnx_data
+sentencepiece.model
+
+# Local archives / scratch
+_archive/
+
+# Challenge brief is marked "Official Use Only" — keep it out of a public repo
+description.pdf

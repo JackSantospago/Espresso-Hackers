@@ -1,0 +1,28 @@
+name: field_assistant
+description: "Offline farming assistant: on-device LLM + RAG + memory (Android & iOS)."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.0
+  flutter: '>=3.47.0'   # required by flutter_edge_ai_sqlite
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_edge_ai: ^1.11.4            # core API (formerly flutter_gemma)
+  flutter_edge_ai_litertlm: ^1.8.6    # .litertlm LLM engine + embedding backend
+  flutter_edge_ai_embeddings: ^2.2.1  # tokenizers for the embedding model
+  flutter_edge_ai_sqlite: ^1.4.0      # on-device vector store (sqlite-vec)
+  path_provider: ^2.1.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/knowledge/
