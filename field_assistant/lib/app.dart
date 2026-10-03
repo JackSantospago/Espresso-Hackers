@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'core/app_settings.dart';
 import 'services/model_setup.dart';
-import 'ui/screens/home_shell.dart';
-import 'ui/screens/setup_screen.dart';
-import 'ui/theme.dart';
+import 'frontend/shell/home_shell.dart';
+import 'frontend/setup/setup_screen.dart';
+import 'frontend/shared/theme.dart';
 
 class FieldAssistantApp extends StatelessWidget {
   const FieldAssistantApp({super.key, required this.settings});

@@ -1,5 +1,5 @@
-import '../services/brain.dart';
-import '../services/outbox.dart';
+import '../../services/brain.dart';
+import '../../services/outbox.dart';
 
 /// What the My farm and Officer screens read and change. The default just
 /// forwards to [Brain] and [Outbox]; `main_preview.dart` swaps in fake data so

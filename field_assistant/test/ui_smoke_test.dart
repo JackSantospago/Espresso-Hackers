@@ -5,9 +5,9 @@ import 'package:field_assistant/core/app_settings.dart';
 import 'package:field_assistant/core/strings.dart';
 import 'package:field_assistant/preview/fake_data.dart';
 import 'package:field_assistant/services/assistant.dart';
-import 'package:field_assistant/ui/screens/chat_screen.dart';
-import 'package:field_assistant/ui/screens/help_screen.dart';
-import 'package:field_assistant/ui/theme.dart';
+import 'package:field_assistant/frontend/chatbot/chat_screen.dart';
+import 'package:field_assistant/frontend/help/help_screen.dart';
+import 'package:field_assistant/frontend/shared/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

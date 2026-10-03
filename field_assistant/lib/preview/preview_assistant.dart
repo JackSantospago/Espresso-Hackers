@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 import '../services/assistant.dart';
 import '../services/brain.dart';
 import '../services/outbox.dart';
-import '../ui/farm_data.dart';
+import '../frontend/shared/farm_data.dart';
 import 'fake_data.dart';
 
 /// Start on a new chat (the potato), or with a conversation that shows every

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/app_settings.dart';
 import '../../core/config.dart';
 import '../../services/assistant.dart';
-import '../widgets/language_picker.dart';
+import '../shared/language_picker.dart';
 
 /// "Help": language, how the assistant works, where data lives, and its limits.
 class HelpScreen extends StatelessWidget {

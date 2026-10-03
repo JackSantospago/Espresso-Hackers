@@ -6,10 +6,10 @@ import '../../core/config.dart';
 import '../../services/assistant.dart';
 import '../../services/leaf_classifier.dart'
     if (dart.library.js_interop) '../../services/leaf_classifier_stub.dart';
-import '../widgets/composer.dart';
-import '../widgets/language_picker.dart';
-import '../widgets/message_bubble.dart';
-import '../widgets/potato_mascot.dart';
+import 'widgets/composer.dart';
+import '../shared/language_picker.dart';
+import 'widgets/message_bubble.dart';
+import 'widgets/potato_mascot.dart';
 
 /// The "Ask" tab, laid out like a chat with Claude: a new chat shows the potato
 /// and a greeting; once the farmer sends something it gives way to the conversation.

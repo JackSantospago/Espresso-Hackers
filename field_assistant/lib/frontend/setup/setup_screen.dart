@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/app_settings.dart';
 import '../../core/config.dart';
 import '../../services/model_setup.dart';
-import '../widgets/language_picker.dart';
+import '../shared/language_picker.dart';
 
 /// First launch: pick a language, understand the promise (private, honest,
 /// you decide), then the one-time model download.

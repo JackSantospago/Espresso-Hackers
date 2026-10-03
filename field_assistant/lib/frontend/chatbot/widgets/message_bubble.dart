@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../core/app_settings.dart';
-import '../../core/config.dart';
-import '../../services/assistant.dart';
+import '../../../core/app_settings.dart';
+import '../../../core/config.dart';
+import '../../../services/assistant.dart';
 import 'diagnosis_card.dart';
 import 'potato_mascot.dart';
 

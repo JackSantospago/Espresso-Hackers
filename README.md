@@ -12,7 +12,7 @@ and they wait on the phone until there is signal.
 | Path | What it is |
 | --- | --- |
 | [`field_assistant/`](field_assistant/) | The Flutter app (Android & iOS): on-device LLM + RAG + memory + leaf photo check. Setup and run instructions are in its [README](field_assistant/README.md). |
-| [`field_assistant/lib/`](field_assistant/lib/) | `core/` config & translations · `services/` AI logic (no UI) · `ui/` screens and widgets |
+| [`field_assistant/lib/`](field_assistant/lib/) | `core/` config & translations · `services/` AI logic (no UI) · `frontend/` screens and widgets, one folder per page ([guide](field_assistant/lib/frontend/README.md)) |
 | [`field_assistant/assets/knowledge/`](field_assistant/assets/knowledge/) | Sourced farming guides the assistant answers from |
 | [`training/leaf_classifier.ipynb`](training/leaf_classifier.ipynb) | Colab notebook that trains the ~4 MB MobileNetV3 leaf classifier |
 

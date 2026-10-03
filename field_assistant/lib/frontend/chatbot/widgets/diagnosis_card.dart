@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../core/app_settings.dart';
-import '../../services/leaf_diagnosis.dart';
+import '../../../core/app_settings.dart';
+import '../../../services/leaf_diagnosis.dart';
 
 /// Shows what the on-device photo check saw: a verdict, the top guesses as
 /// bars, and the "needs X% to give advice" line so the farmer can see *why*

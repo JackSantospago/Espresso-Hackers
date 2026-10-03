@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/app_settings.dart';
 import '../../services/assistant.dart';
-import '../farm_data.dart';
+import '../shared/farm_data.dart';
 import 'memory_screen.dart';
 import 'outbox_screen.dart';
 

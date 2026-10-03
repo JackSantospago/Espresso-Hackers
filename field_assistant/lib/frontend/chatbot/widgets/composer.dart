@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../core/app_settings.dart';
+import '../../../core/app_settings.dart';
 
 /// The rounded input card at the bottom of the chat: text on top, the leaf
 /// photo button and a round send arrow underneath.

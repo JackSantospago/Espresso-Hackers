@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../core/app_settings.dart';
 import '../../services/assistant.dart';
-import '../farm_data.dart';
-import 'chat_screen.dart';
-import 'grow_screen.dart';
-import 'help_screen.dart';
-import 'sell_screen.dart';
+import '../shared/farm_data.dart';
+import '../chatbot/chat_screen.dart';
+import '../grow/grow_screen.dart';
+import '../help/help_screen.dart';
+import '../sell/sell_screen.dart';
 
 /// Bottom navigation, always visible: Ask · Grow · Sell · Help.
 /// Owns the [Assistant] so the model stays loaded while switching tabs.

@@ -9,8 +9,8 @@ import 'package:flutter/material.dart';
 import 'core/app_settings.dart';
 import 'preview/phone_frame.dart';
 import 'preview/preview_assistant.dart';
-import 'ui/screens/home_shell.dart';
-import 'ui/theme.dart';
+import 'frontend/shell/home_shell.dart';
+import 'frontend/shared/theme.dart';
 
 const _phoneFrame = bool.fromEnvironment('PHONE_FRAME', defaultValue: true);
 

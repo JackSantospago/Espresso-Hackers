@@ -39,11 +39,11 @@ lib/
     leaf_classifier.dart     on-device TFLite leaf model + preprocessing
     outbox.dart              store-and-forward queue for the extension officer
     model_setup.dart         one-time model download + knowledge indexing
-  ui/
-    theme.dart               light/dark theme
-    screens/                 setup, home_shell (bottom nav), chat, memory ("My farm"),
-                             outbox ("Officer"), help (language, how it works, privacy, limits)
-    widgets/                 message_bubble, diagnosis_card, composer, language_picker
+  frontend/                  one folder per page (see lib/frontend/README.md)
+    chatbot/ grow/ sell/ help/ setup/
+    shell/                   home_shell: bottom bar (Ask · Grow · Sell · Help)
+    shared/                  theme, language picker, farm_data
+  main_preview.dart, preview/  UI in the browser on fake data, no models
 test/ui_smoke_test.dart      renders the screens with fake data in every language (`flutter test`)
 assets/knowledge/            drop your sourced documents here (blank-line-separated paragraphs become passages)
 ```
@@ -81,5 +81,5 @@ uploaded when there is signal (`--dart-define=OUTBOX_URL=https://…`, multipart
 No URL set = photos stay on the phone (demo). The outbox screen (tray icon) lists, sends or deletes them.
 
 Files: `lib/services/leaf_classifier.dart` (model + preprocessing), `lib/services/outbox.dart` (store-and-forward),
-photo flow in `lib/services/assistant.dart`, screen in `lib/ui/screens/outbox_screen.dart`. Disease explanations need sourced passages in `assets/knowledge/`
+photo flow in `lib/services/assistant.dart`, screen in `lib/frontend/grow/outbox_screen.dart`. Disease explanations need sourced passages in `assets/knowledge/`
 (one per condition the model knows) — without them the LLM correctly answers "not sure".

@@ -5,7 +5,7 @@ import '../../core/app_settings.dart';
 import '../../core/strings.dart';
 import '../../services/assistant.dart';
 import '../../services/outbox.dart';
-import '../farm_data.dart';
+import '../shared/farm_data.dart';
 
 /// "Officer": photos the farmer chose to send for human review. She can see
 /// everything queued, send it now, or delete it before it goes.

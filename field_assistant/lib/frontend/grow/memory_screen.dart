@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/app_settings.dart';
 import '../../services/assistant.dart';
 import '../../services/brain.dart';
-import '../farm_data.dart';
+import '../shared/farm_data.dart';
 
 /// "My farm": everything the app remembers, visible and deletable by the farmer.
 class MemoryScreen extends StatefulWidget {
