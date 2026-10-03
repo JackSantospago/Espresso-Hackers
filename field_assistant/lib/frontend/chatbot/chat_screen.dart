@@ -178,7 +178,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         );
       case AssistantState.ready:
-        if (_a.turns.isEmpty) return _Welcome(onAsk: _send, onPhoto: _pickPhoto);
+        if (_a.turns.isEmpty) return const _Welcome();
         final turns = _a.turns;
         return ListView.builder(
           controller: _scroll,
@@ -200,14 +200,10 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 }
 
-/// New chat: the potato, a greeting, and four ways to start (a leaf photo and
-/// three common questions), so a first-time user never faces a blank screen.
+/// New chat: just the potato and a greeting, like a new chat with Claude.
+/// The input (with the leaf photo button) is the only call to action.
 class _Welcome extends StatelessWidget {
-  const _Welcome({required this.onAsk, required this.onPhoto});
-  final void Function(String) onAsk;
-  final VoidCallback onPhoto;
-
-  static const _icons = [Icons.trending_down_rounded, Icons.healing_outlined, Icons.bug_report_outlined];
+  const _Welcome();
 
   @override
   Widget build(BuildContext context) {
@@ -220,104 +216,34 @@ class _Welcome extends StatelessWidget {
         : hour < 18
             ? s.greetingAfternoon
             : s.greetingEvening;
-    final questions = s.suggestions.take(3).toList();
-    final cards = <Widget>[
-      _StartCard(icon: Icons.photo_camera_outlined, text: s.checkLeaf, onTap: onPhoto, accent: true),
-      for (var i = 0; i < questions.length; i++)
-        _StartCard(icon: _icons[i % _icons.length], text: questions[i], onTap: () => onAsk(questions[i])),
-    ];
 
     return LayoutBuilder(
       builder: (context, box) {
-        // Short screens (iPhone SE, small Androids): smaller potato so the four cards stay visible.
-        final compact = box.maxHeight < 560;
-        final tiny = box.maxHeight < 470;
-        final halo = tiny ? 84.0 : compact ? 112.0 : 150.0;
+        // Short screens (iPhone SE, small Androids) get a smaller potato.
+        final halo = box.maxHeight < 470 ? 110.0 : 160.0;
         return Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                // The potato on a soft halo.
-                Container(
-                  width: halo,
-                  height: halo,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(colors: [c.primaryContainer, c.primaryContainer.withValues(alpha: 0)]),
-                  ),
-                  alignment: Alignment.center,
-                  child: PotatoMascot(size: halo * 0.82),
+            padding: const EdgeInsets.fromLTRB(28, 8, 28, 24),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              // The potato on a soft halo.
+              Container(
+                width: halo,
+                height: halo,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(colors: [c.primaryContainer, c.primaryContainer.withValues(alpha: 0)]),
                 ),
-                SizedBox(height: compact ? 8 : 14),
-                if (!tiny) Text(greeting, style: t.labelLarge?.copyWith(color: c.primary, letterSpacing: 0.4)),
-                const SizedBox(height: 6),
-                Text(s.welcomeTitle, textAlign: TextAlign.center, style: compact ? t.headlineSmall : t.headlineMedium),
-                SizedBox(height: tiny ? 12 : compact ? 16 : 24),
-                // Very short screens show one row so nothing hides behind the input.
-                for (var row = 0; row < (tiny ? 2 : cards.length); row += 2)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: IntrinsicHeight(
-                      child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                        Expanded(child: cards[row]),
-                        const SizedBox(width: 10),
-                        Expanded(child: row + 1 < cards.length ? cards[row + 1] : const SizedBox()),
-                      ]),
-                    ),
-                  ),
-              ]),
-            ),
+                alignment: Alignment.center,
+                child: PotatoMascot(size: halo * 0.82),
+              ),
+              const SizedBox(height: 18),
+              Text(greeting, style: t.labelLarge?.copyWith(color: c.primary, letterSpacing: 0.4)),
+              const SizedBox(height: 8),
+              Text(s.welcomeTitle, textAlign: TextAlign.center, style: t.headlineMedium),
+            ]),
           ),
         );
       },
-    );
-  }
-}
-
-class _StartCard extends StatelessWidget {
-  const _StartCard({required this.icon, required this.text, required this.onTap, this.accent = false});
-  final IconData icon;
-  final String text;
-  final VoidCallback onTap;
-  final bool accent;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = Theme.of(context).colorScheme;
-    final t = Theme.of(context).textTheme;
-    final fg = accent ? c.onSecondaryContainer : c.onSurface;
-    return Material(
-      color: accent ? c.secondaryContainer : c.surfaceContainerLowest,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: BorderSide(color: accent ? c.secondary.withValues(alpha: 0.25) : c.outlineVariant),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Container(
-              padding: const EdgeInsets.all(7),
-              decoration: BoxDecoration(
-                color: accent ? c.secondary : c.primaryContainer,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, size: 18, color: accent ? c.onSecondary : c.onPrimaryContainer),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              text,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: t.bodyMedium?.copyWith(color: fg, fontWeight: accent ? FontWeight.w700 : FontWeight.w500, height: 1.3),
-            ),
-          ]),
-        ),
-      ),
     );
   }
 }
