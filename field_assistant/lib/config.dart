@@ -8,6 +8,11 @@ const hfToken = String.fromEnvironment('HF_TOKEN');
 /// Watch the `match` number under each answer and tune.
 const kConfidenceThreshold = 0.2;
 
+/// Where queued leaf photos are uploaded for review by an extension officer
+/// (multipart POST: photo, note, model_guess). Empty = photos stay on the phone.
+///   flutter run --dart-define=OUTBOX_URL=https://…
+const kOutboxUrl = String.fromEnvironment('OUTBOX_URL');
+
 class LlmChoice {
   const LlmChoice({
     required this.label,

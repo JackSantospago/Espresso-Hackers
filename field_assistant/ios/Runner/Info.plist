@@ -4,6 +4,10 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Take a photo of a leaf so the app can check it for disease, offline on your phone.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Choose a leaf photo so the app can check it for disease, offline on your phone.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
