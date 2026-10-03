@@ -3,12 +3,11 @@ import 'dart:io';
 import 'dart:isolate';
 import 'dart:typed_data';
 
-import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 
-import 'config.dart';
+import '../core/config.dart';
 import 'leaf_classifier.dart';
 
 /// One photo the farmer chose to send to an extension officer.
@@ -120,14 +119,11 @@ class Outbox {
   }
 
   /// Uploads every unsent item. Safe to call any time: offline it just fails
-  /// quietly and the items wait for the next try. Returns a short status line.
-  static Future<String> sendPending() async {
+  /// quietly and the items wait for the next try.
+  static Future<SendReport> sendPending() async {
     final pending = (await items()).where((i) => !i.sent).toList();
-    if (pending.isEmpty) return 'Nothing waiting to send.';
-    if (kOutboxUrl.isEmpty) {
-      return 'No review server set in this build (run with --dart-define=OUTBOX_URL=…). '
-          '${pending.length} photo(s) stay safely on the phone.';
-    }
+    if (pending.isEmpty) return const SendReport(sent: 0, waiting: 0);
+    if (kOutboxUrl.isEmpty) return SendReport(sent: 0, waiting: pending.length, noServer: true);
     var sent = 0;
     for (final item in pending) {
       try {
@@ -147,103 +143,15 @@ class Outbox {
         break; // no signal — stop and try again later
       }
     }
-    final left = pending.length - sent;
-    return sent == 0
-        ? 'No connection. ${pending.length} photo(s) will be sent when there is signal.'
-        : 'Sent $sent photo(s).${left > 0 ? ' $left still waiting.' : ''}';
+    return SendReport(sent: sent, waiting: pending.length - sent);
   }
 }
 
-/// The farmer can see everything queued, send it now, or delete it before it goes.
-class OutboxPage extends StatefulWidget {
-  const OutboxPage({super.key});
-  @override
-  State<OutboxPage> createState() => _OutboxPageState();
-}
+/// Result of one [Outbox.sendPending] attempt (the UI words it for the farmer).
+class SendReport {
+  const SendReport({required this.sent, required this.waiting, this.noServer = false});
+  final int sent, waiting;
 
-class _OutboxPageState extends State<OutboxPage> {
-  List<OutboxItem> _items = [];
-  bool _sending = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _refresh();
-  }
-
-  Future<void> _refresh() async {
-    final items = await Outbox.items();
-    if (mounted) setState(() => _items = items);
-  }
-
-  Future<void> _sendNow() async {
-    setState(() => _sending = true);
-    final msg = await Outbox.sendPending();
-    if (!mounted) return;
-    setState(() => _sending = false);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-    await _refresh();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final pending = _items.where((i) => !i.sent).length;
-    return Scaffold(
-      appBar: AppBar(title: const Text('For the extension officer')),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Padding(
-            padding: EdgeInsets.all(12),
-            child: Text(
-              'These photos are sent to your extension officer for review the next time the phone has signal. '
-              'Only the leaf photo, your note and the app\'s guess are sent — no name or location. '
-              'Delete any photo you do not want to send.',
-            ),
-          ),
-          Expanded(
-            child: _items.isEmpty
-                ? const Center(child: Text('Nothing saved.'))
-                : ListView(
-                    children: [
-                      for (final item in _items)
-                        ListTile(
-                          leading: ClipRRect(
-                            borderRadius: BorderRadius.circular(6),
-                            child: Image.file(item.photo, width: 56, height: 56, fit: BoxFit.cover),
-                          ),
-                          title: Text(item.note.isEmpty ? '(no note)' : item.note, maxLines: 2, overflow: TextOverflow.ellipsis),
-                          subtitle: Text(
-                            '${item.created.toLocal().toString().substring(0, 16)} · '
-                            '${item.sent ? 'sent' : 'waiting for signal'}'
-                            '${item.modelGuess == null ? '' : ' · app guess: ${item.modelGuess!['label']}'}',
-                          ),
-                          trailing: IconButton(
-                            tooltip: 'Delete',
-                            icon: const Icon(Icons.delete_outline),
-                            onPressed: () async {
-                              await Outbox.remove(item);
-                              await _refresh();
-                            },
-                          ),
-                        ),
-                    ],
-                  ),
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: FilledButton.icon(
-                onPressed: pending == 0 || _sending ? null : _sendNow,
-                icon: _sending
-                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.cloud_upload_outlined),
-                label: Text(pending == 0 ? 'Nothing to send' : 'Send $pending now'),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  /// No OUTBOX_URL in this build: photos stay on the phone (demo mode).
+  final bool noServer;
 }
