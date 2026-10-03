@@ -60,6 +60,7 @@ instead of hard-coded colors and sizes, so every page stays consistent in light 
 - Do not change `lib/services/` here; that is the backend team's. If a page needs new
   data, put a fake in `../preview/` for now and note what the real one should return.
 
-The `frontend` branch is not merged into `main` directly: it carries preview-only code
-(`main_preview.dart`, `preview/`, a web stand-in for the leaf classifier). When the UI is
-ready, the `frontend/` folder is brought into `main` and wired to the real backend.
+Frontend work happens on the `frontend` branch and is merged into `main` for demos and
+releases. The preview-only code (`main_preview.dart`, `preview/`, `web/`, and the web
+stand-in `services/leaf_classifier_stub.dart`) is never used by the phone app, which starts
+from `main.dart`.

@@ -1,9 +1,13 @@
 // Renders the main screens with fake data (no models, no plugins) in every
 // language, at a small-phone size, so layout overflows and missing strings
 // show up in `flutter test` instead of on a farmer's phone.
+import 'dart:io';
+
 import 'package:field_assistant/core/app_settings.dart';
 import 'package:field_assistant/core/strings.dart';
 import 'package:field_assistant/frontend/grow/grow_screen.dart';
+import 'package:field_assistant/frontend/grow/guides_screen.dart';
+import 'package:field_assistant/frontend/shared/guides.dart';
 import 'package:field_assistant/preview/fake_data.dart';
 import 'package:field_assistant/preview/preview_assistant.dart';
 import 'package:field_assistant/services/assistant.dart';
@@ -24,6 +28,18 @@ Assistant _fakeConversation(S s) => Assistant(s)
   ..turns.addAll(fakeConversation(s));
 
 void main() {
+  test('guides parse the knowledge file format (title, sections, sources)', () {
+    final text = File('assets/knowledge/coffee_leaf_rust.md').readAsStringSync();
+    final g = parseGuides(text, 'coffee_leaf_rust.md').single;
+    expect(g.title, 'Coffee leaf rust');
+    expect(g.crop, GuideCrop.coffee);
+    expect(g.summary, isNotEmpty);
+    expect(g.sections, isNotEmpty);
+    expect(g.sections.map((x) => x.heading), contains('Symptoms'));
+    expect(g.sections.every((x) => x.sources.isNotEmpty), isTrue, reason: 'every paragraph ends with (Source: …)');
+    expect(g.sections.any((x) => x.text.contains('(Source:')), isFalse);
+  });
+
   for (final lang in AppLanguage.values) {
     group(lang.nativeName, () {
       late AppSettings settings;
@@ -75,14 +91,16 @@ void main() {
         await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200))); // guides load from assets
         await tester.pumpAndSettle();
         expect(find.text(s.farmTitle), findsOneWidget);
-        expect(find.text('Coffee leaf rust'), findsOneWidget); // from assets/knowledge/coffee_sample.md
+        // The fake farm grows coffee, so coffee guides (from assets/knowledge/) come first.
+        final first = tester.widget<GuideTile>(find.byType(GuideTile).first).guide;
+        expect(first.crop, GuideCrop.coffee);
 
         // Open a guide and ask about it.
-        await tester.tap(find.text('Coffee leaf rust'));
+        await tester.tap(find.text(first.title));
         await tester.pumpAndSettle();
         await tester.tap(find.text(s.askAboutThis));
         await tester.pumpAndSettle();
-        expect(asked, s.askAbout('Coffee leaf rust'));
+        expect(asked, s.askAbout(first.title));
 
         // Add a note: it shows up in Your farm.
         await tester.tap(find.text(s.addNote));

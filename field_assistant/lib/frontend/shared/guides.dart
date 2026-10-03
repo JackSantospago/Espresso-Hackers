@@ -1,17 +1,37 @@
 import 'package:flutter/services.dart';
 
-/// One readable topic from the sourced guides in assets/knowledge/: the same
-/// files the assistant answers from, shown as they are so the farmer (and the
-/// judges) can see where answers come from. No models needed.
-class Guide {
-  const Guide({required this.title, required this.text, required this.source});
-  final String title, text, source;
+/// Which crop a guide is about, from its file name (coffee_leaf_rust.md → coffee).
+enum GuideCrop { coffee, maize, beans, more }
+
+/// One part of a guide: "Symptoms", "Management, part 1", … and where it comes from.
+class GuideSection {
+  const GuideSection({required this.heading, required this.text, required this.sources});
+  final String heading, text;
+
+  /// The paragraph's "(Source: …)" note, e.g. "KALRO; Wikipedia". Empty if none.
+  final String sources;
 }
 
-/// Reads every .md/.txt in assets/knowledge/. A file with `## ` headings gives
-/// one guide per heading; otherwise each paragraph is a guide, titled by its
-/// lead-in ("Managing coffee leaf rust: …"), its subject ("Coffee leaf rust is …")
-/// or its first sentence.
+/// One topic from the sourced guides in assets/knowledge/: the same files the
+/// assistant answers from, shown as they are so the farmer (and the judges)
+/// can see where answers come from. No models needed.
+class Guide {
+  const Guide({
+    required this.title,
+    required this.summary,
+    required this.sections,
+    required this.source,
+    required this.crop,
+  });
+  final String title, summary, source;
+  final List<GuideSection> sections;
+  final GuideCrop crop;
+
+  /// All the text, for search.
+  String get text => [title, summary, for (final s in sections) '${s.heading} ${s.text}'].join(' ');
+}
+
+/// Reads every .md/.txt in assets/knowledge/ (one topic per file).
 Future<List<Guide>> loadGuides([AssetBundle? bundle]) async {
   final b = bundle ?? rootBundle;
   final manifest = await AssetManifest.loadFromAssetBundle(b);
@@ -27,32 +47,70 @@ Future<List<Guide>> loadGuides([AssetBundle? bundle]) async {
   return out;
 }
 
+final _sourceNote = RegExp(r'\s*\(Sources?:\s*([^)]*)\)\s*$');
+
+/// The knowledge files look like (see KNOWLEDGE_SOURCES.md):
+///
+///     Coffee leaf rust: what it is, how to recognise it, …      ← title: summary
+///
+///     Coffee leaf rust symptoms: look at the underside … (Source: KALRO)
+///
+/// so a file is one guide whose paragraphs become sections ("Symptoms").
+/// A file with `## ` headings gives one guide per heading instead.
 List<Guide> parseGuides(String text, String source) {
+  final crop = _crop(source);
   if (RegExp(r'^## ', multiLine: true).hasMatch(text)) {
     return [
       for (final part in text.split(RegExp(r'^## ', multiLine: true)).skip(1))
         if (part.trim().isNotEmpty)
-          Guide(
-            title: part.split('\n').first.trim(),
-            text: part.split('\n').skip(1).join('\n').trim(),
-            source: source,
-          ),
+          _guide(part.split('\n').first.trim(), '', _paragraphs(part.split('\n').skip(1).join('\n')), source, crop),
     ];
   }
-  return [
-    for (final p in text.split(RegExp(r'\n\s*\n')).map((p) => p.trim()))
-      // Skip empty paragraphs and the "SAMPLE CONTENT" banner of placeholder files.
-      if (p.isNotEmpty && !p.startsWith('SAMPLE CONTENT')) Guide(title: _title(p), text: p, source: source),
-  ];
+  final paras = _paragraphs(text).where((p) => !p.startsWith('SAMPLE CONTENT')).toList();
+  if (paras.isEmpty) return const [];
+  // A short first line without a source note is the file's "title: what it covers".
+  final first = paras.first;
+  final colon = first.indexOf(':');
+  if (colon > 0 && colon <= 80 && first.length < 240 && !_sourceNote.hasMatch(first)) {
+    return [_guide(first.substring(0, colon).trim(), first.substring(colon + 1).trim(), paras.skip(1), source, crop)];
+  }
+  return [_guide(_titleFromFile(source), '', paras, source, crop)];
 }
 
-String _title(String p) {
-  final colon = p.indexOf(':');
-  if (colon > 0 && colon <= 60) return p.substring(0, colon);
-  // "Coffee leaf rust is caused by …" -> "Coffee leaf rust"
-  final subject = RegExp(r'^(.{3,40}?) (is|are) ').firstMatch(p);
-  if (subject != null) return subject.group(1)!;
-  final dot = p.indexOf('. ');
-  final first = dot > 0 ? p.substring(0, dot) : p;
-  return first.length <= 60 ? first : '${first.substring(0, 57).trimRight()}…';
+Guide _guide(String title, String summary, Iterable<String> paras, String source, GuideCrop crop) => Guide(
+      title: title,
+      summary: summary,
+      source: source,
+      crop: crop,
+      sections: [for (final p in paras) _section(p, title)],
+    );
+
+GuideSection _section(String p, String title) {
+  final note = _sourceNote.firstMatch(p);
+  final body = note == null ? p : p.substring(0, note.start).trim();
+  final colon = body.indexOf(':');
+  if (colon <= 0 || colon > 70) return GuideSection(heading: '', text: body, sources: note?.group(1)?.trim() ?? '');
+  // "Coffee leaf rust symptoms: …" → "Symptoms" (the guide's title is already on screen).
+  var heading = body.substring(0, colon).trim();
+  if (heading.toLowerCase().startsWith(title.toLowerCase())) {
+    heading = heading.substring(title.length).trim().replaceFirst(RegExp(r'^(and|,)\s*'), '');
+  }
+  if (heading.isNotEmpty) heading = heading[0].toUpperCase() + heading.substring(1);
+  return GuideSection(heading: heading, text: body.substring(colon + 1).trim(), sources: note?.group(1)?.trim() ?? '');
+}
+
+Iterable<String> _paragraphs(String text) =>
+    text.split(RegExp(r'\n\s*\n')).map((p) => p.trim()).where((p) => p.isNotEmpty);
+
+GuideCrop _crop(String file) => file.startsWith('coffee')
+    ? GuideCrop.coffee
+    : file.startsWith('maize')
+        ? GuideCrop.maize
+        : file.startsWith('bean')
+            ? GuideCrop.beans
+            : GuideCrop.more;
+
+String _titleFromFile(String file) {
+  final name = file.replaceAll(RegExp(r'\.(md|txt)$'), '').replaceAll('_', ' ');
+  return name.isEmpty ? file : name[0].toUpperCase() + name.substring(1);
 }

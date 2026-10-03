@@ -1,19 +1,30 @@
 import 'package:flutter/material.dart';
 
 import '../../core/app_settings.dart';
+import '../../core/strings.dart';
 import '../shared/guides.dart';
 
-/// Icon for a guide, from words in its title (pests, diseases, pruning…).
+/// Icon for a guide, from words in its title (pests, diseases, soil, water…).
 IconData guideIcon(Guide g) {
   final t = g.title.toLowerCase();
-  if (t.contains('borer') || t.contains('pest') || t.contains('insect')) return Icons.bug_report_outlined;
-  if (t.contains('rust') || t.contains('disease') || t.contains('blight')) return Icons.coronavirus_outlined;
-  if (t.contains('prun') || t.contains('stump')) return Icons.content_cut_rounded;
-  if (t.contains('harvest') || t.contains('yield') || t.contains('older')) return Icons.agriculture_outlined;
-  return Icons.menu_book_outlined;
+  bool any(List<String> words) => words.any(t.contains);
+  if (any(['borer', 'armyworm', 'miner', 'pest', 'insect'])) return Icons.bug_report_outlined;
+  if (any(['rust', 'blight', 'spot', 'disease'])) return Icons.coronavirus_outlined;
+  if (any(['soil', 'compost', 'liming', 'nutrient'])) return Icons.landscape_outlined;
+  if (any(['water', 'dryland', 'climate'])) return Icons.water_drop_outlined;
+  if (any(['storage', 'aflatoxin'])) return Icons.inventory_2_outlined;
+  if (any(['rotation', 'intercropping'])) return Icons.autorenew_rounded;
+  return Icons.spa_outlined;
 }
 
-/// One guide in a list: icon, title, source.
+String cropLabel(S s, GuideCrop crop) => switch (crop) {
+      GuideCrop.coffee => s.guidesCoffee,
+      GuideCrop.maize => s.guidesMaize,
+      GuideCrop.beans => s.guidesBeans,
+      GuideCrop.more => s.guidesMore,
+    };
+
+/// One guide in a list: icon, title, what it covers.
 class GuideTile extends StatelessWidget {
   const GuideTile({super.key, required this.guide, required this.onTap});
   final Guide guide;
@@ -38,8 +49,10 @@ class GuideTile extends StatelessWidget {
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(guide.title, style: t.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 2),
-              Text(guide.source, style: t.bodySmall),
+              if (guide.summary.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(guide.summary, style: t.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+              ],
             ]),
           ),
           Icon(Icons.chevron_right_rounded, color: c.onSurfaceVariant),
@@ -49,7 +62,8 @@ class GuideTile extends StatelessWidget {
   }
 }
 
-/// Opens a guide to read, with its source and a shortcut to ask the assistant.
+/// Opens a guide to read: sections with their sources, and a shortcut to ask
+/// the assistant about it.
 Future<void> showGuide(BuildContext context, Guide guide, {void Function(String question)? onAsk}) {
   final s = context.s;
   return showModalBottomSheet<void>(
@@ -60,87 +74,165 @@ Future<void> showGuide(BuildContext context, Guide guide, {void Function(String 
       final t = Theme.of(context).textTheme;
       return DraggableScrollableSheet(
         expand: false,
-        initialChildSize: 0.6,
-        maxChildSize: 0.92,
-        builder: (context, scroll) => ListView(
-          controller: scroll,
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-          children: [
-            Row(children: [
-              Icon(guideIcon(guide), color: c.primary),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(color: c.surfaceContainer, borderRadius: BorderRadius.circular(8)),
-                  child: Text('${s.sources} ${guide.source}', style: t.labelSmall, overflow: TextOverflow.ellipsis),
+        initialChildSize: 0.75,
+        maxChildSize: 0.95,
+        builder: (context, scroll) => Column(children: [
+          Expanded(
+            child: ListView(
+              controller: scroll,
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+              children: [
+                Row(children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: c.primaryContainer, borderRadius: BorderRadius.circular(12)),
+                    child: Icon(guideIcon(guide), size: 20, color: c.onPrimaryContainer),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(cropLabel(s, guide.crop), style: t.labelLarge?.copyWith(color: c.primary)),
+                ]),
+                const SizedBox(height: 14),
+                Text(guide.title, style: t.headlineSmall),
+                if (guide.summary.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(guide.summary, style: t.bodyMedium?.copyWith(color: c.onSurfaceVariant)),
+                ],
+                for (final sec in guide.sections) ...[
+                  const SizedBox(height: 20),
+                  if (sec.heading.isNotEmpty) ...[
+                    Text(sec.heading, style: t.titleSmall),
+                    const SizedBox(height: 6),
+                  ],
+                  Text(sec.text, style: t.bodyLarge?.copyWith(height: 1.55)),
+                  if (sec.sources.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 1),
+                        child: Icon(Icons.verified_outlined, size: 14, color: c.primary),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(child: Text('${s.sources} ${sec.sources}', style: t.labelSmall?.copyWith(color: c.onSurfaceVariant))),
+                    ]),
+                  ],
+                ],
+              ],
+            ),
+          ),
+          if (onAsk != null)
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 12),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      onAsk(s.askAbout(guide.title));
+                    },
+                    icon: const Icon(Icons.chat_bubble_outline),
+                    label: Text(s.askAboutThis),
+                  ),
                 ),
               ),
-            ]),
-            const SizedBox(height: 14),
-            Text(guide.title, style: t.headlineSmall),
-            const SizedBox(height: 12),
-            Text(guide.text, style: t.bodyLarge?.copyWith(height: 1.55)),
-            if (onAsk != null) ...[
-              const SizedBox(height: 24),
-              FilledButton.icon(
-                onPressed: () {
-                  Navigator.pop(context);
-                  onAsk(s.askAbout(guide.title));
-                },
-                icon: const Icon(Icons.chat_bubble_outline),
-                label: Text(s.askAboutThis),
-              ),
-            ],
-          ],
-        ),
+            ),
+        ]),
       );
     },
   );
 }
 
-/// Every guide on the phone.
-class GuidesScreen extends StatelessWidget {
+/// Every guide on the phone, with crop filters and search.
+class GuidesScreen extends StatefulWidget {
   const GuidesScreen({super.key, required this.guides, this.onAsk});
   final List<Guide> guides;
   final void Function(String question)? onAsk;
 
   @override
+  State<GuidesScreen> createState() => _GuidesScreenState();
+}
+
+class _GuidesScreenState extends State<GuidesScreen> {
+  GuideCrop? _crop;
+  String _query = '';
+
+  @override
   Widget build(BuildContext context) {
     final s = context.s;
+    final c = Theme.of(context).colorScheme;
     final t = Theme.of(context).textTheme;
+    final q = _query.trim().toLowerCase();
+    final shown = [
+      for (final g in widget.guides)
+        if ((_crop == null || g.crop == _crop) && (q.isEmpty || g.text.toLowerCase().contains(q))) g,
+    ];
+    final crops = GuideCrop.values.where((cr) => widget.guides.any((g) => g.crop == cr)).toList();
+
     return Scaffold(
       appBar: AppBar(title: Text(s.guidesTitle)),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
         children: [
-          Text(s.guidesNote, style: t.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          TextField(
+            onChanged: (v) => setState(() => _query = v),
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              hintText: s.guidesSearch,
+              prefixIcon: const Icon(Icons.search_rounded),
+            ),
+          ),
           const SizedBox(height: 12),
-          if (guides.isEmpty)
-            Padding(padding: const EdgeInsets.all(24), child: Text(s.guidesEmpty, textAlign: TextAlign.center))
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(children: [
+              for (final cr in <GuideCrop?>[null, ...crops])
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(cr == null ? s.guidesAll : cropLabel(s, cr)),
+                    selected: _crop == cr,
+                    onSelected: (_) => setState(() => _crop = cr),
+                  ),
+                ),
+            ]),
+          ),
+          const SizedBox(height: 12),
+          if (shown.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(32),
+              child: Text(widget.guides.isEmpty ? s.guidesEmpty : s.guidesNoMatch,
+                  textAlign: TextAlign.center, style: t.bodyMedium?.copyWith(color: c.onSurfaceVariant)),
+            )
           else
             Card(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 child: Column(children: [
-                  for (var i = 0; i < guides.length; i++) ...[
+                  for (var i = 0; i < shown.length; i++) ...[
                     if (i > 0) const Divider(),
                     GuideTile(
-                      guide: guides[i],
-                      onTap: () => showGuide(context, guides[i], onAsk: onAsk == null ? null : _askAndClose(context)),
+                      guide: shown[i],
+                      onTap: () => showGuide(context, shown[i], onAsk: widget.onAsk == null ? null : _askAndClose),
                     ),
                   ],
                 ]),
               ),
             ),
+          const SizedBox(height: 12),
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Icon(Icons.verified_outlined, size: 16, color: c.primary),
+            const SizedBox(width: 8),
+            Expanded(child: Text(s.guidesNote, style: t.bodySmall)),
+          ]),
         ],
       ),
     );
   }
 
   /// "Ask about this" from the full list: leave the list, then ask.
-  void Function(String) _askAndClose(BuildContext context) => (q) {
-        Navigator.pop(context);
-        onAsk!(q);
-      };
+  void _askAndClose(String question) {
+    Navigator.pop(context);
+    widget.onAsk!(question);
+  }
 }

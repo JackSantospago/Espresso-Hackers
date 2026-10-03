@@ -23,7 +23,7 @@ Diagnosis fakeDiagnosis({required double p}) => Diagnosis(
 List<ChatTurn> fakeConversation(S s) => [
       ChatTurn(s.suggestions.first, fromUser: true),
       ChatTurn('Old trees produce less. Prune in rotation.', fromUser: false)
-        ..sources = ['coffee_sample.md']
+        ..sources = ['coffee_growing.md']
         ..match = 0.42
         ..details = 'match 0.42',
       ChatTurn('What is the price of fertiliser?', fromUser: true),
@@ -36,7 +36,7 @@ List<ChatTurn> fakeConversation(S s) => [
         ..diagnosis = fakeDiagnosis(p: 0.85)
         ..caution = s.photoCaution
         ..reviewPhoto = Uint8List(1)
-        ..sources = ['coffee_sample.md'],
+        ..sources = ['coffee_leaf_rust.md'],
       ChatTurn(s.photoNotSure(s.photoNotSureOther), fromUser: false)
         ..diagnosis = fakeDiagnosis(p: 0.4)
         ..notSure = true

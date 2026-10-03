@@ -155,9 +155,9 @@ class _GrowScreenState extends State<GrowScreen> {
         if (guides.isEmpty)
           Text(s.guidesEmpty, style: t.bodyMedium?.copyWith(color: c.onSurfaceVariant))
         else
-          for (var i = 0; i < guides.length && i < 3; i++) ...[
+          for (final (i, g) in _forFarm(guides, _facts ?? const []).take(3).indexed) ...[
             if (i > 0) const Divider(),
-            GuideTile(guide: guides[i], onTap: () => showGuide(context, guides[i], onAsk: widget.onAsk)),
+            GuideTile(guide: g, onTap: () => showGuide(context, g, onAsk: widget.onAsk)),
           ],
         const SizedBox(height: 8),
         // The trust line: where answers come from, and that it works offline.
@@ -208,6 +208,19 @@ class _GrowScreenState extends State<GrowScreen> {
       ],
     );
   }
+}
+
+/// Guides for the crops the farmer has mentioned come first (from her own facts
+/// only); the rest keep their order.
+List<Guide> _forFarm(List<Guide> guides, List<MemoryItem> facts) {
+  final said = facts.map((f) => f.text.toLowerCase()).join(' ');
+  bool mentioned(GuideCrop crop) => switch (crop) {
+        GuideCrop.coffee => said.contains('coffee') || said.contains('kahawa') || said.contains('café'),
+        GuideCrop.maize => said.contains('maize') || said.contains('corn') || said.contains('mahindi') || said.contains('maïs'),
+        GuideCrop.beans => said.contains('bean') || said.contains('maharagwe') || said.contains('haricot'),
+        GuideCrop.more => false,
+      };
+  return [...guides.where((g) => mentioned(g.crop)), ...guides.where((g) => !mentioned(g.crop))];
 }
 
 /// "Add a note": owns its text controller so it outlives the closing animation.

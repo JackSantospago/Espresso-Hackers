@@ -72,7 +72,7 @@ class PreviewAssistant extends Assistant {
     reply
       ..notSure = notSure
       ..warning = notSure ? strings.weakMatch : ''
-      ..sources = notSure ? const [] : const ['coffee_sample.md']
+      ..sources = notSure ? const [] : const ['coffee_growing.md']
       ..match = match
       ..details = 'match ${match.toStringAsFixed(2)} · preview (no model)';
     busy = false;
@@ -102,7 +102,7 @@ class PreviewAssistant extends Assistant {
       await _stream(reply, 'Leaf rust shows yellow-orange powder under the leaf. Prune for airflow and keep trees well fed.');
       reply
         ..caution = strings.photoCaution
-        ..sources = const ['coffee_sample.md']
+        ..sources = const ['coffee_leaf_rust.md']
         ..match = 0.51;
     } else {
       reply

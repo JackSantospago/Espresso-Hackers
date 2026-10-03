@@ -103,6 +103,13 @@ class S {
     required this.askAbout,
     required this.askAboutThis,
     required this.officerSummary,
+    required this.guidesAll,
+    required this.guidesCoffee,
+    required this.guidesMaize,
+    required this.guidesBeans,
+    required this.guidesMore,
+    required this.guidesSearch,
+    required this.guidesNoMatch,
     required this.memoryTitle,
     required this.memoryIntro,
     required this.memoryEmpty,
@@ -200,6 +207,7 @@ class S {
   final String guidesTitle, guidesNote, guidesEmpty, askAboutThis;
   final String Function(String topic) askAbout;
   final String Function(int waiting, int sent) officerSummary;
+  final String guidesAll, guidesCoffee, guidesMaize, guidesBeans, guidesMore, guidesSearch, guidesNoMatch;
 
   // Memory
   final String memoryTitle, memoryIntro, memoryEmpty, forget, forgotten, forgetAll, forgetAllConfirm;
@@ -330,6 +338,13 @@ final S _en = S(
   askAbout: (topic) => 'Tell me more about: $topic',
   askAboutThis: 'Ask about this',
   officerSummary: (waiting, sent) => '$waiting waiting · $sent sent',
+  guidesAll: 'All',
+  guidesCoffee: 'Coffee',
+  guidesMaize: 'Maize',
+  guidesBeans: 'Beans',
+  guidesMore: 'Soil & more',
+  guidesSearch: 'Search the guides',
+  guidesNoMatch: 'No guide matches.',
   memoryTitle: 'What I remember',
   memoryIntro: 'Facts you told me about your farm. They stay on this phone and help me give '
       'better answers. Remove anything that is wrong.',
@@ -499,6 +514,13 @@ final S _sw = S(
   askAbout: (topic) => 'Nieleze zaidi kuhusu: $topic',
   askAboutThis: 'Uliza kuhusu hili',
   officerSummary: (waiting, sent) => '$waiting zinasubiri · $sent zimetumwa',
+  guidesAll: 'Zote',
+  guidesCoffee: 'Kahawa',
+  guidesMaize: 'Mahindi',
+  guidesBeans: 'Maharagwe',
+  guidesMore: 'Udongo na mengine',
+  guidesSearch: 'Tafuta kwenye miongozo',
+  guidesNoMatch: 'Hakuna mwongozo unaolingana.',
   memoryTitle: 'Ninachokumbuka',
   memoryIntro: 'Mambo uliyoniambia kuhusu shamba lako. Yanabaki kwenye simu hii na yananisaidia kutoa '
       'majibu bora. Futa chochote kisicho sahihi.',
@@ -669,6 +691,13 @@ final S _fr = S(
   askAbout: (topic) => "Dites-m'en plus sur : $topic",
   askAboutThis: 'Poser une question',
   officerSummary: (waiting, sent) => '$waiting en attente · $sent envoyée(s)',
+  guidesAll: 'Tous',
+  guidesCoffee: 'Café',
+  guidesMaize: 'Maïs',
+  guidesBeans: 'Haricots',
+  guidesMore: 'Sol et autres',
+  guidesSearch: 'Rechercher dans les guides',
+  guidesNoMatch: 'Aucun guide ne correspond.',
   memoryTitle: 'Ce dont je me souviens',
   memoryIntro: "Ce que vous m'avez dit sur votre ferme. Ces informations restent sur ce téléphone et "
       "m'aident à mieux répondre. Supprimez ce qui est faux.",
