@@ -1,0 +1,128 @@
+{
+  "version": 1,
+  "input_size": 224,
+  "input": "RGB float32 0..255, center square crop",
+  "output": "logits",
+  "temperature": 1.1,
+  "threshold": 0.5,
+  "other_label": "other",
+  "labels": [
+    {
+      "id": "coffee__healthy",
+      "crop": "Coffee",
+      "condition": "healthy leaf"
+    },
+    {
+      "id": "coffee__leaf_rust",
+      "crop": "Coffee",
+      "condition": "leaf rust"
+    },
+    {
+      "id": "coffee__cercospora",
+      "crop": "Coffee",
+      "condition": "Cercospora leaf spot (brown eye spot)"
+    },
+    {
+      "id": "coffee__phoma",
+      "crop": "Coffee",
+      "condition": "Phoma leaf spot"
+    },
+    {
+      "id": "coffee__leaf_miner",
+      "crop": "Coffee",
+      "condition": "leaf miner (insect damage)"
+    },
+    {
+      "id": "bean__healthy",
+      "crop": "Bean",
+      "condition": "healthy leaf"
+    },
+    {
+      "id": "bean__angular_leaf_spot",
+      "crop": "Bean",
+      "condition": "angular leaf spot"
+    },
+    {
+      "id": "bean__rust",
+      "crop": "Bean",
+      "condition": "bean rust"
+    },
+    {
+      "id": "maize__healthy",
+      "crop": "Maize",
+      "condition": "healthy leaf"
+    },
+    {
+      "id": "maize__common_rust",
+      "crop": "Maize",
+      "condition": "common rust"
+    },
+    {
+      "id": "maize__gray_leaf_spot",
+      "crop": "Maize",
+      "condition": "gray leaf spot"
+    },
+    {
+      "id": "maize__northern_leaf_blight",
+      "crop": "Maize",
+      "condition": "northern leaf blight"
+    },
+    {
+      "id": "other",
+      "crop": "",
+      "condition": "not one of the crops this model knows"
+    }
+  ],
+  "trained_on": [
+    "beans",
+    "bracol",
+    "imagenette",
+    "jmuben",
+    "plantdoc",
+    "plantvillage"
+  ],
+  "test_report": [
+    {
+      "source": "ALL",
+      "images": 1219,
+      "top1_accuracy": 0.955,
+      "accuracy_when_confident": 0.937,
+      "share_answered": 0.65
+    },
+    {
+      "source": "beans",
+      "images": 128,
+      "top1_accuracy": 0.961,
+      "accuracy_when_confident": 0.969,
+      "share_answered": 0.992
+    },
+    {
+      "source": "bracol",
+      "images": 256,
+      "top1_accuracy": 0.879,
+      "accuracy_when_confident": 0.887,
+      "share_answered": 0.969
+    },
+    {
+      "source": "imagenette",
+      "images": 75,
+      "top1_accuracy": 1.0,
+      "accuracy_when_confident": NaN,
+      "share_answered": 0.0
+    },
+    {
+      "source": "plantdoc",
+      "images": 236,
+      "top1_accuracy": 0.941,
+      "accuracy_when_confident": 0.552,
+      "share_answered": 0.123
+    },
+    {
+      "source": "plantvillage",
+      "images": 524,
+      "top1_accuracy": 0.99,
+      "accuracy_when_confident": 0.987,
+      "share_answered": 0.74
+    }
+  ]
+}

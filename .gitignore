@@ -22,3 +22,6 @@ _archive/
 
 # Challenge brief is marked "Official Use Only" — keep it out of a public repo
 description.pdf
+
+leaf_classifier/
+knowledge_pipeline/
