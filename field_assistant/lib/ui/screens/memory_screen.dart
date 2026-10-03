@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import '../../core/app_settings.dart';
 import '../../services/assistant.dart';
 import '../../services/brain.dart';
+import '../farm_data.dart';
 
 /// "My farm": everything the app remembers, visible and deletable by the farmer.
 class MemoryScreen extends StatefulWidget {
-  const MemoryScreen({super.key, required this.assistant});
+  const MemoryScreen({super.key, required this.assistant, this.data = const FarmData()});
   final Assistant assistant;
+  final FarmData data;
 
   @override
   State<MemoryScreen> createState() => _MemoryScreenState();
@@ -23,7 +25,7 @@ class _MemoryScreenState extends State<MemoryScreen> {
   }
 
   Future<void> _refresh() async {
-    final items = await Brain.memories();
+    final items = await widget.data.memories();
     if (mounted) setState(() => _items = items);
     await widget.assistant.refreshMemoryCount();
   }
@@ -31,7 +33,7 @@ class _MemoryScreenState extends State<MemoryScreen> {
   Future<void> _forget(MemoryItem m) async {
     final s = context.s;
     final messenger = ScaffoldMessenger.of(context);
-    await Brain.forget(m.id);
+    await widget.data.forget(m.id);
     await _refresh();
     messenger.showSnackBar(SnackBar(content: Text(s.forgotten)));
   }
@@ -55,8 +57,8 @@ class _MemoryScreenState extends State<MemoryScreen> {
       ),
     );
     if (ok != true) return;
-    for (final m in await Brain.memories()) {
-      await Brain.forget(m.id);
+    for (final m in await widget.data.memories()) {
+      await widget.data.forget(m.id);
     }
     await _refresh();
   }

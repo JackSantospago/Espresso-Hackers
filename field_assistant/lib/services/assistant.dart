@@ -4,7 +4,7 @@ import 'package:flutter_edge_ai/flutter_edge_ai.dart';
 import '../core/config.dart';
 import '../core/strings.dart';
 import 'brain.dart';
-import 'leaf_classifier.dart';
+import 'leaf_classifier.dart' if (dart.library.js_interop) 'leaf_classifier_stub.dart';
 import 'outbox.dart';
 
 /// One message in the conversation. Assistant replies carry structured

@@ -1,15 +1,18 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/app_settings.dart';
 import '../../core/strings.dart';
 import '../../services/assistant.dart';
 import '../../services/outbox.dart';
+import '../farm_data.dart';
 
 /// "Officer": photos the farmer chose to send for human review. She can see
 /// everything queued, send it now, or delete it before it goes.
 class OutboxScreen extends StatefulWidget {
-  const OutboxScreen({super.key, required this.assistant});
+  const OutboxScreen({super.key, required this.assistant, this.data = const FarmData()});
   final Assistant assistant;
+  final FarmData data;
 
   @override
   State<OutboxScreen> createState() => _OutboxScreenState();
@@ -26,7 +29,7 @@ class _OutboxScreenState extends State<OutboxScreen> {
   }
 
   Future<void> _refresh() async {
-    final items = await Outbox.items();
+    final items = await widget.data.outbox();
     if (mounted) setState(() => _items = items);
     await widget.assistant.refreshOutbox();
   }
@@ -35,7 +38,7 @@ class _OutboxScreenState extends State<OutboxScreen> {
     final s = context.s;
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _sending = true);
-    final report = await Outbox.sendPending();
+    final report = await widget.data.sendPending();
     if (!mounted) return;
     setState(() => _sending = false);
     messenger.showSnackBar(SnackBar(content: Text(describeSendReport(s, report))));
@@ -58,7 +61,7 @@ class _OutboxScreenState extends State<OutboxScreen> {
       );
       if (ok != true) return;
     }
-    await Outbox.remove(item);
+    await widget.data.removeFromOutbox(item);
     await _refresh();
   }
 
@@ -142,6 +145,8 @@ class _OutboxCard extends StatelessWidget {
     final c = Theme.of(context).colorScheme;
     final t = Theme.of(context).textTheme;
     final guess = item.modelGuess;
+    final placeholder =
+        Container(width: 96, height: 96, color: c.surfaceContainerHighest, child: const Icon(Icons.broken_image_outlined));
     final guessText = guess == null
         ? null
         : '${s.appGuess}: ${_prettyLabel(guess['label'] as String? ?? '?')}'
@@ -152,14 +157,10 @@ class _OutboxCard extends StatelessWidget {
       child: Card(
         clipBehavior: Clip.antiAlias,
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Image.file(
-            item.photo,
-            width: 96,
-            height: 96,
-            fit: BoxFit.cover,
-            errorBuilder: (context, _, _) =>
-                Container(width: 96, height: 96, color: c.surfaceContainerHighest, child: const Icon(Icons.broken_image_outlined)),
-          ),
+          // No files in the browser preview (main_preview.dart): show the placeholder.
+          kIsWeb
+              ? placeholder
+              : Image.file(item.photo, width: 96, height: 96, fit: BoxFit.cover, errorBuilder: (context, _, _) => placeholder),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 10, 0, 10),

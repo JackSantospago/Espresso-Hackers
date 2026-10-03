@@ -4,7 +4,8 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/app_settings.dart';
 import '../../core/config.dart';
 import '../../services/assistant.dart';
-import '../../services/leaf_classifier.dart';
+import '../../services/leaf_classifier.dart'
+    if (dart.library.js_interop) '../../services/leaf_classifier_stub.dart';
 import '../widgets/composer.dart';
 import '../widgets/language_picker.dart';
 import '../widgets/message_bubble.dart';

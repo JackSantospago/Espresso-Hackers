@@ -7,58 +7,15 @@ import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
 import 'package:tflite_flutter/tflite_flutter.dart';
 
+import 'leaf_diagnosis.dart';
+
+// The result types live in leaf_diagnosis.dart (no plugins) so code that only
+// shows results can also build for the web; see leaf_classifier_stub.dart.
+export 'leaf_diagnosis.dart';
+
 /// Both files come out of `training/leaf_classifier.ipynb`.
 const kLeafModelAsset = 'assets/models/leaf_classifier.tflite';
 const kLeafMetaAsset = 'assets/models/leaf_classifier.json';
-
-class LeafLabel {
-  const LeafLabel(this.id, this.crop, this.condition);
-  final String id, crop, condition;
-
-  bool get isHealthy => id.endsWith('__healthy');
-  String get display => crop.isEmpty ? condition : '$crop – $condition';
-}
-
-class Guess {
-  const Guess(this.label, this.probability);
-  final LeafLabel label;
-  final double probability;
-
-  String get percent => '${(probability * 100).round()}%';
-  @override
-  String toString() => '${label.display} $percent';
-}
-
-class Diagnosis {
-  const Diagnosis({
-    required this.top,
-    required this.threshold,
-    required this.otherId,
-    required this.millis,
-  });
-
-  /// Best guesses, most likely first (at most 3).
-  final List<Guess> top;
-  final double threshold;
-  final String otherId;
-  final int millis;
-
-  Guess get best => top.first;
-  bool get isOther => best.label.id == otherId;
-
-  /// The fail-safe: name a condition only when the calibrated probability
-  /// clears the threshold chosen in the notebook AND it is one of our crops.
-  bool get confident => !isOther && best.probability >= threshold;
-
-  Map<String, dynamic> toJson() => {
-        'label': best.label.id,
-        'probability': double.parse(best.probability.toStringAsFixed(3)),
-        'confident': confident,
-        'top': [
-          for (final g in top) {'label': g.label.id, 'probability': double.parse(g.probability.toStringAsFixed(3))},
-        ],
-      };
-}
 
 /// On-device leaf classifier (MobileNetV3, ~4 MB TFLite). Fully offline.
 ///

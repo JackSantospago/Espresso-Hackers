@@ -1,12 +1,10 @@
 // Renders the main screens with fake data (no models, no plugins) in every
 // language, at a small-phone size, so layout overflows and missing strings
 // show up in `flutter test` instead of on a farmer's phone.
-import 'dart:typed_data';
-
 import 'package:field_assistant/core/app_settings.dart';
 import 'package:field_assistant/core/strings.dart';
+import 'package:field_assistant/preview/fake_data.dart';
 import 'package:field_assistant/services/assistant.dart';
-import 'package:field_assistant/services/leaf_classifier.dart';
 import 'package:field_assistant/ui/screens/chat_screen.dart';
 import 'package:field_assistant/ui/screens/help_screen.dart';
 import 'package:field_assistant/ui/theme.dart';
@@ -18,43 +16,9 @@ Widget _wrap(AppSettings settings, Widget child) => SettingsScope(
       child: MaterialApp(theme: AppTheme.light(), home: child),
     );
 
-Diagnosis _diagnosis({required double p}) => Diagnosis(
-      top: [
-        Guess(const LeafLabel('coffee__rust', 'Coffee', 'Leaf rust'), p),
-        Guess(const LeafLabel('coffee__miner', 'Coffee', 'Leaf miner'), (1 - p) * 0.7),
-        Guess(const LeafLabel('other', '', 'Other'), (1 - p) * 0.3),
-      ],
-      threshold: 0.6,
-      otherId: 'other',
-      millis: 120,
-    );
-
-Assistant _fakeConversation(S s) {
-  final a = Assistant(s)..state = AssistantState.ready;
-  a.turns.addAll([
-    ChatTurn(s.suggestions.first, fromUser: true),
-    ChatTurn('Old trees produce less. Prune in rotation.', fromUser: false)
-      ..sources = ['coffee_sample.md']
-      ..match = 0.42
-      ..details = 'match 0.42',
-    ChatTurn('What is the price of fertiliser?', fromUser: true),
-    ChatTurn(s.notSure, fromUser: false)
-      ..notSure = true
-      ..warning = s.weakMatch
-      ..match = 0.05,
-    ChatTurn(s.photoDefaultQuestion, fromUser: true),
-    ChatTurn('Leaf rust shows yellow-orange powder under the leaf.', fromUser: false)
-      ..diagnosis = _diagnosis(p: 0.85)
-      ..caution = s.photoCaution
-      ..reviewPhoto = Uint8List(1)
-      ..sources = ['coffee_sample.md'],
-    ChatTurn(s.photoNotSure(s.photoNotSureOther), fromUser: false)
-      ..diagnosis = _diagnosis(p: 0.4)
-      ..notSure = true
-      ..queued = true,
-  ]);
-  return a;
-}
+Assistant _fakeConversation(S s) => Assistant(s)
+  ..state = AssistantState.ready
+  ..turns.addAll(fakeConversation(s));
 
 void main() {
   for (final lang in AppLanguage.values) {

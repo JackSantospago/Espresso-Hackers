@@ -8,7 +8,7 @@ import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 
 import '../core/config.dart';
-import 'leaf_classifier.dart';
+import 'leaf_classifier.dart' if (dart.library.js_interop) 'leaf_classifier_stub.dart';
 
 /// One photo the farmer chose to send to an extension officer.
 class OutboxItem {

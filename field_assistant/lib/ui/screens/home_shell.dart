@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/app_settings.dart';
 import '../../services/assistant.dart';
+import '../farm_data.dart';
 import 'chat_screen.dart';
 import 'help_screen.dart';
 import 'memory_screen.dart';
@@ -9,8 +10,11 @@ import 'outbox_screen.dart';
 
 /// Bottom navigation: Ask · My farm · Officer · Help.
 /// Owns the [Assistant] so the model stays loaded while switching tabs.
+/// Pass [assistant] and [data] to run the screens on fake data (main_preview.dart).
 class HomeShell extends StatefulWidget {
-  const HomeShell({super.key});
+  const HomeShell({super.key, this.assistant, this.data = const FarmData()});
+  final Assistant? assistant;
+  final FarmData data;
 
   @override
   State<HomeShell> createState() => _HomeShellState();
@@ -28,7 +32,7 @@ class _HomeShellState extends State<HomeShell> {
     super.didChangeDependencies();
     final s = context.s;
     if (_assistant == null) {
-      _assistant = Assistant(s)..load();
+      _assistant = widget.assistant ?? (Assistant(s)..load());
     } else {
       _assistant!.strings = s; // language changed
     }
@@ -46,8 +50,8 @@ class _HomeShellState extends State<HomeShell> {
     final a = _assistant!;
     final key = ValueKey('$_tab-$_visit');
     final Widget other = switch (_tab) {
-      1 => MemoryScreen(key: key, assistant: a),
-      2 => OutboxScreen(key: key, assistant: a),
+      1 => MemoryScreen(key: key, assistant: a, data: widget.data),
+      2 => OutboxScreen(key: key, assistant: a, data: widget.data),
       3 => HelpScreen(key: key, assistant: a),
       _ => const SizedBox.shrink(),
     };

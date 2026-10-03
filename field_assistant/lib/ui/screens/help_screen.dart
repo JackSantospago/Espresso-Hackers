@@ -40,7 +40,7 @@ class HelpScreen extends StatelessWidget {
                 _Row(label: s.modelEmbedder, value: '${activeEmbedder.label} · ${activeEmbedder.sizeLabel}'),
                 _Row(
                   label: s.modelLeaf,
-                  value: assistant.hasPhotoCheck
+                  value: assistant.classifier != null
                       ? 'MobileNetV3 · ${assistant.classifier!.labels.length} classes · ${s.installed}'
                       : s.notInstalled,
                 ),
