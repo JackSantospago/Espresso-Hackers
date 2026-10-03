@@ -89,6 +89,20 @@ class S {
     required this.cancel,
     required this.save,
     required this.delete,
+    required this.growIntro,
+    required this.farmTitle,
+    required this.factsCount,
+    required this.addNote,
+    required this.addNoteHint,
+    required this.noteSaved,
+    required this.seeAll,
+    required this.guidesTitle,
+    required this.guidesNote,
+    required this.seeAllGuides,
+    required this.guidesEmpty,
+    required this.askAbout,
+    required this.askAboutThis,
+    required this.officerSummary,
     required this.memoryTitle,
     required this.memoryIntro,
     required this.memoryEmpty,
@@ -179,6 +193,13 @@ class S {
   // Message bubble
   final String askPerson, sources, matchStrong, matchWeak, details;
   final String sendToOfficer, queuedNote, consentTitle, consentBody, cancel, save, delete;
+
+  // Grow (overview of the farm, the guides on the phone, the officer)
+  final String growIntro, farmTitle, addNote, addNoteHint, noteSaved, seeAll;
+  final String Function(int n) factsCount, seeAllGuides;
+  final String guidesTitle, guidesNote, guidesEmpty, askAboutThis;
+  final String Function(String topic) askAbout;
+  final String Function(int waiting, int sent) officerSummary;
 
   // Memory
   final String memoryTitle, memoryIntro, memoryEmpty, forget, forgotten, forgetAll, forgetAllConfirm;
@@ -295,6 +316,20 @@ final S _en = S(
   cancel: 'Cancel',
   save: 'Save',
   delete: 'Delete',
+  growIntro: 'Your farm, your guides and your extension officer, all on this phone.',
+  farmTitle: 'Your farm',
+  factsCount: (n) => n == 1 ? '1 thing I remember' : '$n things I remember',
+  addNote: 'Add a note',
+  addNoteHint: 'For example: I planted 50 new trees on the lower plot.',
+  noteSaved: 'Saved. I will use this in my answers.',
+  seeAll: 'See all',
+  guidesTitle: 'Guides on this phone',
+  guidesNote: 'Sourced extension material, stored on this phone. Readable without internet.',
+  seeAllGuides: (n) => 'See all $n guides',
+  guidesEmpty: 'No guides on this phone yet.',
+  askAbout: (topic) => 'Tell me more about: $topic',
+  askAboutThis: 'Ask about this',
+  officerSummary: (waiting, sent) => '$waiting waiting · $sent sent',
   memoryTitle: 'What I remember',
   memoryIntro: 'Facts you told me about your farm. They stay on this phone and help me give '
       'better answers. Remove anything that is wrong.',
@@ -450,6 +485,20 @@ final S _sw = S(
   cancel: 'Ghairi',
   save: 'Hifadhi',
   delete: 'Futa',
+  growIntro: 'Shamba lako, miongozo yako na afisa wako wa ugani, vyote kwenye simu hii.',
+  farmTitle: 'Shamba lako',
+  factsCount: (n) => n == 1 ? 'Jambo 1 ninalokumbuka' : 'Mambo $n ninayokumbuka',
+  addNote: 'Ongeza dokezo',
+  addNoteHint: 'Kwa mfano: Nimepanda miti mipya 50 kwenye shamba la chini.',
+  noteSaved: 'Imehifadhiwa. Nitaitumia kwenye majibu yangu.',
+  seeAll: 'Ona yote',
+  guidesTitle: 'Miongozo kwenye simu hii',
+  guidesNote: 'Taarifa za ugani zenye vyanzo, zimehifadhiwa kwenye simu hii. Zinasomeka bila intaneti.',
+  seeAllGuides: (n) => 'Ona miongozo yote $n',
+  guidesEmpty: 'Bado hakuna miongozo kwenye simu hii.',
+  askAbout: (topic) => 'Nieleze zaidi kuhusu: $topic',
+  askAboutThis: 'Uliza kuhusu hili',
+  officerSummary: (waiting, sent) => '$waiting zinasubiri · $sent zimetumwa',
   memoryTitle: 'Ninachokumbuka',
   memoryIntro: 'Mambo uliyoniambia kuhusu shamba lako. Yanabaki kwenye simu hii na yananisaidia kutoa '
       'majibu bora. Futa chochote kisicho sahihi.',
@@ -606,6 +655,20 @@ final S _fr = S(
   cancel: 'Annuler',
   save: 'Enregistrer',
   delete: 'Supprimer',
+  growIntro: 'Votre ferme, vos guides et votre conseiller agricole, tout sur ce téléphone.',
+  farmTitle: 'Votre ferme',
+  factsCount: (n) => n == 1 ? '1 chose que je retiens' : '$n choses que je retiens',
+  addNote: 'Ajouter une note',
+  addNoteHint: "Par exemple : j'ai planté 50 nouveaux arbres sur la parcelle du bas.",
+  noteSaved: "Enregistré. Je m'en servirai dans mes réponses.",
+  seeAll: 'Tout voir',
+  guidesTitle: 'Guides sur ce téléphone',
+  guidesNote: 'Documents de vulgarisation sourcés, stockés sur ce téléphone. Lisibles sans internet.',
+  seeAllGuides: (n) => 'Voir les $n guides',
+  guidesEmpty: 'Aucun guide sur ce téléphone pour le moment.',
+  askAbout: (topic) => "Dites-m'en plus sur : $topic",
+  askAboutThis: 'Poser une question',
+  officerSummary: (waiting, sent) => '$waiting en attente · $sent envoyée(s)',
   memoryTitle: 'Ce dont je me souviens',
   memoryIntro: "Ce que vous m'avez dit sur votre ferme. Ces informations restent sur ce téléphone et "
       "m'aident à mieux répondre. Supprimez ce qui est faux.",

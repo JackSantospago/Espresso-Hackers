@@ -3,12 +3,15 @@
 // show up in `flutter test` instead of on a farmer's phone.
 import 'package:field_assistant/core/app_settings.dart';
 import 'package:field_assistant/core/strings.dart';
+import 'package:field_assistant/frontend/grow/grow_screen.dart';
 import 'package:field_assistant/preview/fake_data.dart';
+import 'package:field_assistant/preview/preview_assistant.dart';
 import 'package:field_assistant/services/assistant.dart';
 import 'package:field_assistant/frontend/chatbot/chat_screen.dart';
 import 'package:field_assistant/frontend/help/help_screen.dart';
 import 'package:field_assistant/frontend/shared/theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Widget _wrap(AppSettings settings, Widget child) => SettingsScope(
@@ -25,6 +28,7 @@ void main() {
     group(lang.nativeName, () {
       late AppSettings settings;
       setUp(() async {
+        rootBundle.clear(); // cached asset futures from an earlier test never complete in this one
         settings = AppSettings();
         await settings.setLanguage(lang); // file write fails quietly in tests; the choice still applies
       });
@@ -53,6 +57,40 @@ void main() {
         await tester.pumpWidget(_wrap(settings, ChatScreen(assistant: a)));
         await tester.pump();
         expect(find.text(settings.strings.welcomeTitle), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('grow overview, a guide and the note dialog work', (tester) async {
+        tester.view.physicalSize = const Size(360, 1600);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        final s = settings.strings;
+        final data = PreviewFarmData();
+        String? asked;
+        await tester.pumpWidget(_wrap(
+          settings,
+          GrowScreen(assistant: PreviewAssistant(s, data), data: data, onAsk: (q) => asked = q),
+        ));
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200))); // guides load from assets
+        await tester.pumpAndSettle();
+        expect(find.text(s.farmTitle), findsOneWidget);
+        expect(find.text('Coffee leaf rust'), findsOneWidget); // from assets/knowledge/coffee_sample.md
+
+        // Open a guide and ask about it.
+        await tester.tap(find.text('Coffee leaf rust'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(s.askAboutThis));
+        await tester.pumpAndSettle();
+        expect(asked, s.askAbout('Coffee leaf rust'));
+
+        // Add a note: it shows up in Your farm.
+        await tester.tap(find.text(s.addNote));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextField), 'I planted 50 new trees on the lower plot.');
+        await tester.tap(find.text(s.save));
+        await tester.pumpAndSettle();
+        expect(find.text('I planted 50 new trees on the lower plot.'), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
 

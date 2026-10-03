@@ -170,6 +170,10 @@ class PreviewFarmData extends FarmData {
   Future<void> forget(String id) async => memoryItems.removeWhere((m) => m.id == id);
 
   @override
+  Future<void> remember(String fact) async =>
+      memoryItems.insert(0, MemoryItem('mem:${DateTime.now().microsecondsSinceEpoch}', fact.trim(), DateTime.now()));
+
+  @override
   Future<List<OutboxItem>> outbox() async => List.of(outboxItems);
 
   @override

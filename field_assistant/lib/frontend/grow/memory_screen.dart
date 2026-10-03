@@ -7,12 +7,9 @@ import '../shared/farm_data.dart';
 
 /// "My farm": everything the app remembers, visible and deletable by the farmer.
 class MemoryScreen extends StatefulWidget {
-  const MemoryScreen({super.key, required this.assistant, this.data = const FarmData(), this.embedded = false});
+  const MemoryScreen({super.key, required this.assistant, this.data = const FarmData()});
   final Assistant assistant;
   final FarmData data;
-
-  /// Shown as a tab inside Grow: no app bar of its own.
-  final bool embedded;
 
   @override
   State<MemoryScreen> createState() => _MemoryScreenState();
@@ -73,15 +70,13 @@ class _MemoryScreenState extends State<MemoryScreen> {
     final t = Theme.of(context).textTheme;
     final items = _items;
     return Scaffold(
-      appBar: widget.embedded
-          ? null
-          : AppBar(
-              title: Text(s.memoryTitle),
-              actions: [
-                if (items != null && items.isNotEmpty)
-                  IconButton(tooltip: s.forgetAll, onPressed: _forgetAll, icon: const Icon(Icons.delete_sweep_outlined)),
-              ],
-            ),
+      appBar: AppBar(
+        title: Text(s.memoryTitle),
+        actions: [
+          if (items != null && items.isNotEmpty)
+            IconButton(tooltip: s.forgetAll, onPressed: _forgetAll, icon: const Icon(Icons.delete_sweep_outlined)),
+        ],
+      ),
       body: items == null
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
@@ -122,14 +117,6 @@ class _MemoryScreenState extends State<MemoryScreen> {
                           ),
                         ),
                       ),
-                  if (widget.embedded && items.isNotEmpty)
-                    Align(
-                      child: TextButton.icon(
-                        onPressed: _forgetAll,
-                        icon: const Icon(Icons.delete_sweep_outlined),
-                        label: Text(s.forgetAll),
-                      ),
-                    ),
                 ],
               ),
             ),

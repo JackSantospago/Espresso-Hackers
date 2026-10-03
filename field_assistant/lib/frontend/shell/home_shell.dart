@@ -39,6 +39,12 @@ class _HomeShellState extends State<HomeShell> {
     }
   }
 
+  /// "Ask about this" from another tab: go to the chat and ask.
+  void _ask(String question) {
+    setState(() => _tab = 0);
+    if (_assistant!.canSend) _assistant!.send(question);
+  }
+
   @override
   void dispose() {
     _assistant?.dispose();
@@ -51,7 +57,7 @@ class _HomeShellState extends State<HomeShell> {
     final a = _assistant!;
     final key = ValueKey('$_tab-$_visit');
     final Widget other = switch (_tab) {
-      1 => GrowScreen(key: key, assistant: a, data: widget.data),
+      1 => GrowScreen(key: key, assistant: a, data: widget.data, onAsk: _ask),
       2 => SellScreen(key: key),
       3 => HelpScreen(key: key, assistant: a),
       _ => const SizedBox.shrink(),
