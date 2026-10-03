@@ -22,21 +22,25 @@ class DiagnosisCard extends StatelessWidget {
         ? (Icons.help_outline, c.tertiary, s.diagNotSure)
         : healthy
             ? (Icons.check_circle_outline, c.primary, s.diagHealthy)
-            : (Icons.warning_amber_rounded, c.error, s.diagLikely);
+            : (Icons.warning_amber_rounded, c.secondary, s.diagLikely);
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
-        borderRadius: BorderRadius.circular(12),
+        color: c.surfaceContainerLowest,
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            Icon(icon, color: color),
-            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
+              child: Icon(icon, color: color, size: 22),
+            ),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,7 +52,7 @@ class DiagnosisCard extends StatelessWidget {
               ),
             ),
           ]),
-          const SizedBox(height: 10),
+          const SizedBox(height: 14),
           for (final g in d.top)
             _GuessBar(guess: g, threshold: d.threshold, highlight: identical(g, d.best) && d.confident, color: color),
           const SizedBox(height: 4),
@@ -90,14 +94,14 @@ class _GuessBar extends StatelessWidget {
           ]),
           const SizedBox(height: 4),
           SizedBox(
-            height: 8,
+            height: 6,
             child: LayoutBuilder(
               builder: (context, box) => Stack(
                 clipBehavior: Clip.none,
                 children: [
                   Positioned.fill(
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(3),
                       child: LinearProgressIndicator(
                         value: guess.probability.clamp(0.0, 1.0),
                         color: highlight ? color : c.outline,
@@ -108,9 +112,12 @@ class _GuessBar extends StatelessWidget {
                   // The confidence the app needs before it names a condition.
                   Positioned(
                     left: (box.maxWidth * threshold).clamp(0.0, box.maxWidth - 2),
-                    top: -3,
-                    bottom: -3,
-                    child: Container(width: 2, color: c.onSurface),
+                    top: -4,
+                    bottom: -4,
+                    child: Container(
+                      width: 2,
+                      decoration: BoxDecoration(color: c.onSurfaceVariant, borderRadius: BorderRadius.circular(1)),
+                    ),
                   ),
                 ],
               ),

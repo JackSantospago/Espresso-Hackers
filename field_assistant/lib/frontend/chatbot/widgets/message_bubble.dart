@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/app_settings.dart';
 import '../../../core/config.dart';
@@ -83,6 +84,15 @@ class MessageBubble extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // Who is speaking: the potato and the app's name, like Claude's mark.
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          const PotatoMascot(size: 26),
+                          const SizedBox(width: 6),
+                          Text(s.appName, style: t.labelLarge?.copyWith(color: c.onSurfaceVariant)),
+                        ]),
+                      ),
                       if (turn.diagnosis != null) ...[
                         DiagnosisCard(diagnosis: turn.diagnosis!),
                         const SizedBox(height: 10),
@@ -104,9 +114,10 @@ class MessageBubble extends StatelessWidget {
                         _Notice(icon: Icons.verified_user_outlined, text: turn.caution, color: c.secondary),
                       ],
                       if (!streaming && (turn.sources.isNotEmpty || turn.details.isNotEmpty)) ...[
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
                         _Grounding(turn: turn),
                       ],
+                      if (!streaming && turn.text.isNotEmpty) _Actions(text: turn.text),
                     ],
                   ),
                 ),
@@ -235,6 +246,7 @@ class _Tag extends StatelessWidget {
       );
 }
 
+/// A fail-safe shown as its own card (weak match, confirm before acting).
 class _Notice extends StatelessWidget {
   const _Notice({required this.icon, required this.text, required this.color});
   final IconData icon;
@@ -243,17 +255,50 @@ class _Notice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          border: Border(left: BorderSide(color: color, width: 3)),
+          color: color.withValues(alpha: 0.09),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
         ),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Icon(icon, size: 18, color: color),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           Expanded(child: Text(text, style: Theme.of(context).textTheme.bodyMedium)),
         ]),
       );
+}
+
+/// Small actions under a finished answer.
+class _Actions extends StatelessWidget {
+  const _Actions({required this.text});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.s;
+    final c = Theme.of(context).colorScheme;
+    return Padding(
+      // Pulled up and left so the icon lines up with the text above it.
+      padding: EdgeInsets.zero,
+      child: Transform.translate(
+        offset: const Offset(-8, -2),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+        IconButton(
+          tooltip: s.copy,
+          visualDensity: VisualDensity.compact,
+          iconSize: 18,
+          color: c.onSurfaceVariant,
+          icon: const Icon(Icons.content_copy_rounded),
+          onPressed: () {
+            Clipboard.setData(ClipboardData(text: text));
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.copied), duration: const Duration(seconds: 1)));
+          },
+        ),
+      ]),
+      ),
+    );
+  }
 }
 
 /// The potato bobbing next to what the assistant is doing ("Thinking…").

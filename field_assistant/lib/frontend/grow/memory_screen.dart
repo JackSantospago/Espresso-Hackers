@@ -107,9 +107,13 @@ class _MemoryScreenState extends State<MemoryScreen> {
                         child: Card(
                           child: ListTile(
                             contentPadding: const EdgeInsets.fromLTRB(16, 6, 4, 6),
-                            leading: Icon(Icons.push_pin_outlined, color: c.primary),
+                            leading: CircleAvatar(
+                              radius: 18,
+                              backgroundColor: c.primaryContainer,
+                              child: Icon(Icons.spa_outlined, size: 18, color: c.onPrimaryContainer),
+                            ),
                             title: Text(m.text, style: t.bodyLarge),
-                            subtitle: Text(_date(m.date)),
+                            subtitle: Text(_date(m.date), style: t.bodySmall),
                             trailing: IconButton(
                               tooltip: s.forget,
                               icon: const Icon(Icons.delete_outline),
@@ -145,7 +149,11 @@ class _InfoBanner extends StatelessWidget {
     final c = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: c.primaryContainer.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(14)),
+      decoration: BoxDecoration(
+        color: c.primaryContainer.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: c.primary.withValues(alpha: 0.15)),
+      ),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Icon(icon, color: c.primary),
         const SizedBox(width: 12),

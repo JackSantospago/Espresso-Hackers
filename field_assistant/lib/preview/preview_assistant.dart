@@ -8,10 +8,7 @@ import '../services/brain.dart';
 import '../services/outbox.dart';
 import '../frontend/shared/farm_data.dart';
 import 'fake_data.dart';
-
-/// Start on a new chat (the potato), or with a conversation that shows every
-/// kind of message: --dart-define=PREVIEW_CHAT=demo
-const _demoChat = String.fromEnvironment('PREVIEW_CHAT') == 'demo';
+import 'preview_options.dart';
 
 /// An [Assistant] with no models: canned answers stream in word by word, so
 /// every UI state (searching, streaming, not sure, photo check) can be tried.
@@ -19,7 +16,8 @@ class PreviewAssistant extends Assistant {
   PreviewAssistant(super.strings, this.data) {
     state = AssistantState.ready;
     knowledgePassages = 5;
-    if (_demoChat) turns.addAll(fakeConversation(strings));
+    // ?chat=demo: start on a conversation with every kind of message.
+    if (PreviewOptions.demoChat) turns.addAll(fakeConversation(strings));
     memoryCount = data.memoryItems.length;
     outboxCount = data.outboxItems.where((i) => !i.sent).length;
   }

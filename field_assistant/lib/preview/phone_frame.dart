@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'preview_options.dart';
+
 /// A phone the preview can be shown in: screen size in logical pixels and the
 /// system insets (status bar, home bar) the app sees on the real device.
 class PreviewDevice {
@@ -53,7 +55,7 @@ class PhoneFrame extends StatefulWidget {
 
 class _PhoneFrameState extends State<PhoneFrame> {
   static const _bezel = 12.0;
-  var _device = previewDevices.first;
+  var _device = previewDevices[PreviewOptions.device];
 
   @override
   Widget build(BuildContext context) {

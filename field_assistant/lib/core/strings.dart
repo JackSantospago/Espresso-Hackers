@@ -39,6 +39,12 @@ class S {
     required this.tabSell,
     required this.sellIntro,
     required this.sellComing,
+    required this.comingSoon,
+    required this.greetingMorning,
+    required this.greetingAfternoon,
+    required this.greetingEvening,
+    required this.copy,
+    required this.copied,
     required this.loadingModel,
     required this.loadFailed,
     required this.welcomeTitle,
@@ -143,6 +149,10 @@ class S {
   // Sell (placeholder until there is a market feature)
   final String sellIntro;
   final List<String> sellComing;
+  final String comingSoon;
+
+  // Chat extras
+  final String greetingMorning, greetingAfternoon, greetingEvening, copy, copied;
 
   // Chat
   final String loadingModel, loadFailed, welcomeTitle, welcomeBody;
@@ -214,6 +224,12 @@ final S _en = S(
   tabHelp: 'Help',
   tabGrow: 'Grow',
   tabSell: 'Sell',
+  comingSoon: 'Coming soon',
+  greetingMorning: 'Good morning',
+  greetingAfternoon: 'Good afternoon',
+  greetingEvening: 'Good evening',
+  copy: 'Copy',
+  copied: 'Copied',
   sellIntro: 'Selling your harvest is coming soon. Here is what this page will help with:',
   sellComing: [
     'Keep a record of what you harvested and sold.',
@@ -363,6 +379,12 @@ final S _sw = S(
   tabHelp: 'Msaada',
   tabGrow: 'Kilimo',
   tabSell: 'Uza',
+  comingSoon: 'Inakuja hivi karibuni',
+  greetingMorning: 'Habari za asubuhi',
+  greetingAfternoon: 'Habari za mchana',
+  greetingEvening: 'Habari za jioni',
+  copy: 'Nakili',
+  copied: 'Imenakiliwa',
   sellIntro: 'Kuuza mavuno yako kunakuja hivi karibuni. Ukurasa huu utakusaidia:',
   sellComing: [
     'Kuweka kumbukumbu ya ulichovuna na kuuza.',
@@ -513,6 +535,12 @@ final S _fr = S(
   tabHelp: 'Aide',
   tabGrow: 'Cultiver',
   tabSell: 'Vendre',
+  comingSoon: 'Bientôt disponible',
+  greetingMorning: 'Bonjour',
+  greetingAfternoon: 'Bon après-midi',
+  greetingEvening: 'Bonsoir',
+  copy: 'Copier',
+  copied: 'Copié',
   sellIntro: 'La vente de votre récolte arrive bientôt. Cette page vous aidera à :',
   sellComing: [
     'Garder une trace de ce que vous avez récolté et vendu.',

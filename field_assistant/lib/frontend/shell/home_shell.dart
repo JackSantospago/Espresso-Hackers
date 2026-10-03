@@ -12,9 +12,10 @@ import '../sell/sell_screen.dart';
 /// Owns the [Assistant] so the model stays loaded while switching tabs.
 /// Pass [assistant] and [data] to run the screens on fake data (main_preview.dart).
 class HomeShell extends StatefulWidget {
-  const HomeShell({super.key, this.assistant, this.data = const FarmData()});
+  const HomeShell({super.key, this.assistant, this.data = const FarmData(), this.initialTab = 0});
   final Assistant? assistant;
   final FarmData data;
+  final int initialTab;
 
   @override
   State<HomeShell> createState() => _HomeShellState();
@@ -22,7 +23,7 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   Assistant? _assistant;
-  int _tab = 0;
+  late int _tab = widget.initialTab;
 
   /// Bumped on every tab change so Grow reloads its lists.
   int _visit = 0;
@@ -61,7 +62,9 @@ class _HomeShellState extends State<HomeShell> {
       body: IndexedStack(index: _tab == 0 ? 0 : 1, children: [ChatScreen(assistant: a), other]),
       bottomNavigationBar: ListenableBuilder(
         listenable: a,
-        builder: (context, _) => NavigationBar(
+        builder: (context, _) => DecoratedBox(
+          decoration: BoxDecoration(border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant))),
+          child: NavigationBar(
           selectedIndex: _tab,
           onDestinationSelected: (i) => setState(() {
             _tab = i;
@@ -77,9 +80,9 @@ class _HomeShellState extends State<HomeShell> {
               icon: Badge(
                 isLabelVisible: a.outboxCount > 0,
                 label: Text('${a.outboxCount}'),
-                child: const Icon(Icons.eco_outlined),
+                child: const Icon(Icons.grass_outlined),
               ),
-              selectedIcon: const Icon(Icons.eco),
+              selectedIcon: const Icon(Icons.grass),
               label: s.tabGrow,
             ),
             NavigationDestination(
@@ -93,6 +96,7 @@ class _HomeShellState extends State<HomeShell> {
               label: s.tabHelp,
             ),
           ],
+        ),
         ),
       ),
     );

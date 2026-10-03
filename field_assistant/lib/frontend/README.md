@@ -26,11 +26,28 @@ cd field_assistant
 flutter run -d chrome -t lib/main_preview.dart
 ```
 `r` hot reload, `R` restart. The app shows inside a phone frame (iPhone 16 / iPhone SE /
-small Android, light/dark) with fake data from `../preview/`. Add
-`--dart-define=PREVIEW_CHAT=demo` to start on a conversation with every kind of message,
-or `--dart-define=PHONE_FRAME=false` to fill the window. If `-d chrome` does not open,
+small Android, light/dark) with fake data from `../preview/`. If `-d chrome` does not open,
 use `flutter run -d web-server --web-port 8080 -t lib/main_preview.dart` and open
 http://localhost:8080.
+
+Options go in the page URL, so a link can open a given screen (handy for the demo):
+`http://localhost:8080/?tab=grow&theme=dark&device=se&lang=sw`
+
+| option | values |
+| --- | --- |
+| `tab` | `ask` · `grow` · `sell` · `help` |
+| `chat` | `demo`: start on a conversation with every kind of message |
+| `theme` | `light` · `dark` |
+| `device` | `iphone` · `se` · `android` |
+| `lang` | `en` · `sw` · `fr` |
+| `frame` | `off`: fill the window, no phone |
+
+## Design
+`shared/theme.dart` holds the whole look: cream background, white cards with hairline
+borders, forest green (brand), coffee-cherry (leaf photo, possible disease), amber
+("check with a person"). Fonts: Fraunces for headings, Inter for text, bundled in
+`assets/fonts/` so they work offline. Use `Theme.of(context).colorScheme` and `textTheme`
+instead of hard-coded colors and sizes, so every page stays consistent in light and dark.
 
 ## Working together
 - Work on the `frontend` branch, or a branch off it (`frontend-sell`, …) merged back into `frontend`.

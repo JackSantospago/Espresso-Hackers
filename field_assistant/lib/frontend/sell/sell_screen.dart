@@ -16,25 +16,58 @@ class SellScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text(s.tabSell)),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
         children: [
-          Center(
-            child: CircleAvatar(
-              radius: 40,
-              backgroundColor: c.secondaryContainer,
-              child: Icon(Icons.storefront_outlined, size: 40, color: c.onSecondaryContainer),
+          // Hero.
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 22),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [c.secondaryContainer, c.surfaceContainerLowest],
+              ),
+              border: Border.all(color: c.outlineVariant),
             ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: c.secondary, borderRadius: BorderRadius.circular(16)),
+                  child: Icon(Icons.storefront_outlined, size: 28, color: c.onSecondary),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: c.surfaceContainerLowest,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: c.secondary.withValues(alpha: 0.3)),
+                  ),
+                  child: Text(s.comingSoon, style: t.labelMedium?.copyWith(color: c.secondary)),
+                ),
+              ]),
+              const SizedBox(height: 18),
+              Text(s.sellIntro, style: t.titleLarge?.copyWith(fontSize: 20, height: 1.3)),
+            ]),
           ),
-          const SizedBox(height: 20),
-          Text(s.sellIntro, textAlign: TextAlign.center, style: t.titleMedium),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           for (var i = 0; i < s.sellComing.length; i++)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: Card(
-                child: ListTile(
-                  leading: Icon(icons[i % icons.length], color: c.primary),
-                  title: Text(s.sellComing[i]),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Row(children: [
+                    Container(
+                      padding: const EdgeInsets.all(9),
+                      decoration: BoxDecoration(color: c.primaryContainer, borderRadius: BorderRadius.circular(12)),
+                      child: Icon(icons[i % icons.length], size: 20, color: c.onPrimaryContainer),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(child: Text(s.sellComing[i], style: t.bodyLarge)),
+                  ]),
                 ),
               ),
             ),
