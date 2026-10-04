@@ -11,7 +11,7 @@ key.properties
 # Model weights (download at runtime or side-load; far too big for git)
 *.litertlm
 *.task
-*.tflite
+#*.tflite
 *.gguf
 *.onnx
 *.onnx_data

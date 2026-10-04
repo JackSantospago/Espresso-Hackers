@@ -1,0 +1,63 @@
+# Publishes the UI preview (lib/main_preview.dart: real screens, fake data,
+# scripted answers, no models) to GitHub Pages so judges can click through it:
+#   https://<owner>.github.io/<repo>/            e.g. ?chat=demo  ?tab=grow  ?lang=sw
+# Runs on every push to main that touches the app, or by hand (Actions → Deploy preview → Run workflow).
+# One-time setup: repo Settings → Pages → Source: "GitHub Actions".
+name: Deploy preview to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'field_assistant/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one deploy at a time; a newer push cancels an older build still in progress.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: field_assistant
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.6   # same as the team's local SDK
+          cache: true
+
+      - run: flutter pub get
+
+      # --no-web-resources-cdn bundles the engine (CanvasKit) with the site instead of
+      # loading it from Google's CDN. base-href = /<repo>/ because Pages serves it there.
+      - run: >
+          flutter build web --release
+          -t lib/main_preview.dart
+          --no-web-resources-cdn
+          --base-href "/${{ github.event.repository.name }}/"
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: field_assistant/build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

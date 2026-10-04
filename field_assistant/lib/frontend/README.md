@@ -26,8 +26,8 @@ Add a field to `S` and fill it in all three languages; the compiler points at an
 cd field_assistant
 flutter run -d chrome -t lib/main_preview.dart
 ```
-`r` hot reload, `R` restart. The app shows inside a phone frame (iPhone 16 / iPhone SE /
-small Android, light/dark) with fake data from `../preview/`. If `-d chrome` does not open,
+`r` hot reload, `R` restart. The app shows inside a phone frame (iPhone / small
+Android, light/dark) with fake data from `../preview/`. If `-d chrome` does not open,
 use `flutter run -d web-server --web-port 8080 -t lib/main_preview.dart` and open
 http://localhost:8080.
 
@@ -35,14 +35,14 @@ When a text field has focus the frame draws the phone's keyboard and the app shr
 it, like on a real phone (type with your computer keyboard; "return" hides it).
 
 Options go in the page URL, so a link can open a given screen (handy for the demo):
-`http://localhost:8080/?tab=grow&theme=dark&device=se&lang=sw`
+`http://localhost:8080/?tab=grow&theme=dark&device=android&lang=sw`
 
 | option | values |
 | --- | --- |
 | `tab` | `ask` · `grow` · `sell` · `help` |
 | `chat` | `demo`: start on a conversation with every kind of message |
 | `theme` | `light` · `dark` |
-| `device` | `iphone` · `se` · `android` |
+| `device` | `iphone` · `android` |
 | `lang` | `en` · `sw` · `fr` |
 | `frame` | `off`: fill the window, no phone |
 | `ask` | `harvest`: asks "How much coffee will I harvest?" on start |
