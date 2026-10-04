@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import '../core/strings.dart';
 
 /// Preview options, read from the page URL so a link can open a given screen:
-///   http://localhost:8080/?tab=grow&chat=demo&theme=dark&device=se&lang=sw
+///   http://localhost:8080/?tab=grow&chat=demo&theme=dark&device=android&lang=sw
 ///   tab     ask | grow | sell | help
 ///   chat    demo  (start on a conversation with every kind of message)
-///   theme   light | dark       device  iphone | se | android
+///   theme   light | dark       device  iphone | android
 ///   lang    en | sw | fr       frame   off  (fill the window, no phone)
 ///   weather off  (start with weather not yet turned on)
 abstract final class PreviewOptions {
@@ -29,8 +29,7 @@ abstract final class PreviewOptions {
       };
 
   static int get device => switch (_q['device']) {
-        'se' => 1,
-        'android' => 2,
+        'android' => 1,
         _ => 0,
       };
 

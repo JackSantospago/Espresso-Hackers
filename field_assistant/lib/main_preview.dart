@@ -1,7 +1,7 @@
 // UI preview: the real screens on fake data. No models, no engine init, no
 // setup gate, so it runs in Chrome with hot reload:
 //   flutter run -d chrome -t lib/main_preview.dart
-// The app is drawn inside a phone frame (iPhone 16 / iPhone SE / small Android).
+// The app is drawn inside a phone frame (iPhone / small Android).
 // URL options open a given screen, e.g. http://localhost:8080/?tab=grow&theme=dark
 // (all options: lib/preview/preview_options.dart).
 // The phone app still starts from lib/main.dart.

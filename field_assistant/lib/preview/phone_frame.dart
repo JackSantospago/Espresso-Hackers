@@ -28,7 +28,7 @@ class PreviewDevice {
 
 const previewDevices = [
   PreviewDevice(
-    'iPhone 16',
+    'iPhone', // iPhone 16
     Size(393, 852),
     EdgeInsets.only(top: 59, bottom: 34),
     platform: TargetPlatform.iOS,
@@ -36,9 +36,8 @@ const previewDevices = [
     island: true,
     keyboard: 336,
   ),
-  PreviewDevice('iPhone SE', Size(375, 667), EdgeInsets.only(top: 20), platform: TargetPlatform.iOS, keyboard: 260),
   PreviewDevice(
-    'Small Android',
+    'Android', // a small Android phone
     Size(360, 740),
     EdgeInsets.only(top: 24, bottom: 16),
     platform: TargetPlatform.android,
