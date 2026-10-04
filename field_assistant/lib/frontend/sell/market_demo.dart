@@ -8,9 +8,11 @@ import '../../core/harvest.dart';
 /// accepted offers become sale records. Buyer names are fictional. The page
 /// shows a "Demo" tag so nobody mistakes this for live data.
 ///
-/// Quantities are shares of the season's harvest (the chat's forecast, or
-/// 1,000 kg before there is one), so sold + offered never exceeds what grows,
-/// whatever the farmer's trees: about 30% sold, 35% on offer, 35% still to sell.
+/// Offers arrive in an inbox when the phone is online (the app works offline;
+/// the market syncs whenever there is signal). The season starts unsold; each
+/// accepted offer becomes a sale. Quantities are shares of the season's harvest
+/// (the chat's forecast, or 1,000 kg before there is one), so sold + offered
+/// never exceeds what grows, whatever the farmer's trees.
 
 class BuyerOffer {
   const BuyerOffer({
@@ -61,7 +63,7 @@ class MarketDemo extends ChangeNotifier {
     const BuyerOffer(
       id: 'o1',
       buyer: 'Highland Roasters',
-      share: 0.15,
+      share: 0.35,
       pricePerKg: 80,
       pickupInDays: 3,
       km: 12,
@@ -73,7 +75,7 @@ class MarketDemo extends ChangeNotifier {
     const BuyerOffer(
       id: 'o2',
       buyer: 'Kahawa Bora Co-op',
-      share: 0.12,
+      share: 0.25,
       pricePerKg: 76,
       pickupInDays: 5,
       km: 6,
@@ -84,7 +86,7 @@ class MarketDemo extends ChangeNotifier {
     const BuyerOffer(
       id: 'o3',
       buyer: 'Mama Grace Traders',
-      share: 0.08,
+      share: 0.15,
       pricePerKg: 66,
       pickupInDays: 2,
       km: 21,
@@ -93,13 +95,8 @@ class MarketDemo extends ChangeNotifier {
     ),
   ];
 
-  final List<SaleRecord> sales = [
-    const SaleRecord(buyer: 'Kahawa Bora Co-op', share: 0.18, pricePerKg: 71),
-    const SaleRecord(buyer: 'Highland Roasters', share: 0.12, pricePerKg: 76),
-  ];
-
-  /// The slide-in "new offer" card is shown once per app run.
-  bool offerAlertSeen = false;
+  /// Sales agreed this season (starts empty: the whole harvest is unsold).
+  final List<SaleRecord> sales = [];
 
   /// This season's harvest, worked out in the chat (null until the farmer asks).
   HarvestForecast? forecast;
@@ -132,11 +129,12 @@ class MarketDemo extends ChangeNotifier {
   int saleKg(SaleRecord r) => kg(r.share);
   int saleTotal(SaleRecord r) => saleKg(r) * r.pricePerKg;
 
-  /// Sold or agreed (pickup scheduled), open offers, and what is left to sell.
+  /// Sold or agreed (pickup scheduled), offers waiting in the inbox, and what
+  /// is not sold yet.
   int get soldKg => sales.fold(0, (a, s) => a + saleKg(s));
   int get offeredKg => offers.fold(0, (a, o) => a + offerKg(o));
   int get toSellKg {
-    final left = seasonBase - soldKg - offeredKg;
+    final left = seasonBase - soldKg;
     return left < 0 ? 0 : left;
   }
 

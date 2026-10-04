@@ -52,6 +52,10 @@ class S {
     required this.acceptOffer,
     required this.saleAgreed,
     required this.offersTitle,
+    required this.offersSynced,
+    required this.salesHistory,
+    required this.noSalesYet,
+    required this.marketPrice,
     required this.noOffers,
     required this.marketRef,
     required this.quantity,
@@ -243,7 +247,7 @@ class S {
   final String decline;
   final String acceptOffer;
   final String Function(String buyer) saleAgreed;
-  final String offersTitle;
+  final String offersTitle, offersSynced, salesHistory, noSalesYet, marketPrice;
   final String noOffers;
   final String Function(String price) marketRef;
   final String quantity;
@@ -485,6 +489,10 @@ final S _en = S(
   acceptOffer: 'Accept offer',
   saleAgreed: (buyer) => 'Sale agreed with $buyer.',
   offersTitle: 'Offers from buyers',
+  offersSynced: 'Received the last time your phone was online.',
+  salesHistory: 'Sales history',
+  noSalesYet: 'No sales yet this season.',
+  marketPrice: 'Market price this week',
   noOffers: 'No new offers right now.',
   marketRef: (price) => 'Market reference this week: $price/kg',
   quantity: 'Quantity',
@@ -498,7 +506,7 @@ final S _en = S(
   salesTitle: 'Your sales',
   seasonSummary: (kg, total) => 'This season: $kg kg · $total',
   statusPaid: 'Paid',
-  tipsTitle: 'Selling tips',
+  tipsTitle: 'Tips to sell better',
   sellTips: [
     'Compare offers with the market price.',
     'Weigh your batch before pickup.',
@@ -813,6 +821,10 @@ final S _sw = S(
   acceptOffer: 'Kubali ofa',
   saleAgreed: (buyer) => 'Mauzo yamekubaliwa na $buyer.',
   offersTitle: 'Ofa za wanunuzi',
+  offersSynced: 'Zilipokelewa mara ya mwisho simu ilipokuwa mtandaoni.',
+  salesHistory: 'Historia ya mauzo',
+  noSalesYet: 'Bado hakuna mauzo msimu huu.',
+  marketPrice: 'Bei ya soko wiki hii',
   noOffers: 'Hakuna ofa mpya kwa sasa.',
   marketRef: (price) => 'Bei ya marejeo ya soko wiki hii: $price/kg',
   quantity: 'Kiasi',
@@ -826,7 +838,7 @@ final S _sw = S(
   salesTitle: 'Mauzo yako',
   seasonSummary: (kg, total) => 'Msimu huu: kilo $kg · $total',
   statusPaid: 'Imelipwa',
-  tipsTitle: 'Vidokezo vya kuuza',
+  tipsTitle: 'Vidokezo vya kuuza vizuri',
   sellTips: [
     'Linganisha ofa na bei ya soko.',
     'Pima mzigo wako kabla haujachukuliwa.',
@@ -1144,6 +1156,10 @@ final S _fr = S(
   acceptOffer: "Accepter l'offre",
   saleAgreed: (buyer) => 'Vente conclue avec $buyer.',
   offersTitle: 'Offres des acheteurs',
+  offersSynced: 'Reçues la dernière fois que le téléphone était en ligne.',
+  salesHistory: 'Historique des ventes',
+  noSalesYet: "Aucune vente cette saison pour l'instant.",
+  marketPrice: 'Prix du marché cette semaine',
   noOffers: 'Aucune nouvelle offre pour le moment.',
   marketRef: (price) => 'Prix de référence du marché cette semaine : $price/kg',
   quantity: 'Quantité',
@@ -1157,7 +1173,7 @@ final S _fr = S(
   salesTitle: 'Vos ventes',
   seasonSummary: (kg, total) => 'Cette saison : $kg kg · $total',
   statusPaid: 'Payé',
-  tipsTitle: 'Conseils de vente',
+  tipsTitle: 'Conseils pour mieux vendre',
   sellTips: [
     "Comparez les offres au prix du marché.",
     "Pesez votre lot avant l'enlèvement.",
