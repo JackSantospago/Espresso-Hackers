@@ -6,7 +6,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_edge_ai/flutter_edge_ai.dart';
 import 'package:path_provider/path_provider.dart';
 
-/// One retrieved passage.
+import 'keyword_index.dart';
+
+/// One retrieved passage. [score] is the embedding similarity; 0 when only
+/// the keyword search found it (use [Brain.topScore] for the match strength).
 class Hit {
   const Hit(this.source, this.text, this.score);
   final String source, text;
@@ -43,30 +46,14 @@ class Brain {
   /// files change). Returns the number of indexed passages.
   static Future<int> indexKnowledge({bool force = false, void Function(String)? onStatus}) async {
     final marker = File(await _path('kb_index.json'));
-    final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
-    final assets = manifest
-        .listAssets()
-        .where((a) => a.startsWith('assets/knowledge/') && (a.endsWith('.md') || a.endsWith('.txt')))
-        .toList()
-      ..sort();
-
-    final docs = <(String id, String source, String text)>[];
-    final sig = StringBuffer();
-    for (final a in assets) {
-      final text = await rootBundle.loadString(a);
-      final name = a.split('/').last;
-      sig.write('$name:${text.length}|');
-      final pieces = chunk(text);
-      for (var i = 0; i < pieces.length; i++) {
-        docs.add(('doc:$name:$i', name, pieces[i]));
-      }
-    }
+    final (passages, signature) = await _loadPassages();
+    final docs = [for (final p in passages) (p.id, p.source, p.text)];
 
     var oldIds = <String>[];
     if (await marker.exists()) {
       final m = jsonDecode(await marker.readAsString()) as Map<String, dynamic>;
       oldIds = (m['ids'] as List).cast<String>();
-      if (!force && m['signature'] == sig.toString()) return oldIds.length;
+      if (!force && m['signature'] == signature) return oldIds.length;
     }
     for (final id in oldIds) {
       await FlutterEdgeAi.rag.removeDocument(id: id);
@@ -91,11 +78,37 @@ class Brain {
     }
     await FlutterEdgeAi.rag.flush();
     await marker.writeAsString(jsonEncode({
-      'signature': sig.toString(),
+      'signature': signature,
       'ids': docs.map((d) => d.$1).toList(),
     }));
     return docs.length;
   }
+
+  /// Every passage of assets/knowledge/ (same ids as the vector index), and a
+  /// signature that changes when any file changes.
+  static Future<(List<Passage>, String)> _loadPassages() async {
+    final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+    final assets = manifest
+        .listAssets()
+        .where((a) => a.startsWith('assets/knowledge/') && (a.endsWith('.md') || a.endsWith('.txt')))
+        .toList()
+      ..sort();
+    final passages = <Passage>[];
+    final sig = StringBuffer();
+    for (final a in assets) {
+      final text = await rootBundle.loadString(a);
+      final name = a.split('/').last;
+      sig.write('$name:${text.length}|');
+      final pieces = chunk(text);
+      for (var i = 0; i < pieces.length; i++) {
+        passages.add(Passage('doc:$name:$i', name, pieces[i]));
+      }
+    }
+    return (passages, sig.toString());
+  }
+
+  static KeywordIndex? _keywords;
+  static Future<KeywordIndex> _keywordIndex() async => _keywords ??= KeywordIndex((await _loadPassages()).$1);
 
   /// Splits on blank lines and packs paragraphs into ~600-character passages.
   static List<String> chunk(String text, {int maxChars = 600}) {
@@ -116,17 +129,27 @@ class Brain {
     return out;
   }
 
-  static Future<List<Hit>> searchKnowledge(String query, {int k = 3}) async {
+  /// Hybrid search: embedding similarity + keyword (BM25) ranking, fused, with
+  /// at most 2 passages per guide so the passage that answers the question is
+  /// not crowded out by others about the same crop.
+  static Future<List<Hit>> searchKnowledge(String query, {int k = 4}) async {
     await FlutterEdgeAi.getActiveEmbedder(); // the runtime does not survive restarts; the index does
-    final results = await FlutterEdgeAi.rag.searchSimilar(query: query, topK: k, filter: _kind('doc'));
-    return results.map((r) {
+    final results = await FlutterEdgeAi.rag.searchSimilar(query: query, topK: 12, filter: _kind('doc'));
+    final semantic = results.map((r) {
       var source = r.id;
       try {
         source = (jsonDecode(r.metadata ?? '{}') as Map)['source'] as String? ?? r.id;
       } catch (_) {}
-      return Hit(source, r.content, r.similarity);
+      return (Passage(r.id, source, r.content), r.similarity);
     }).toList();
+    final keyword = (await _keywordIndex()).search(query, k: 12);
+    return fuseRankings(semantic: semantic, keyword: keyword, k: k)
+        .map((f) => Hit(f.passage.source, f.passage.text, f.similarity ?? 0))
+        .toList();
   }
+
+  /// Match strength of a search: the best embedding similarity among [hits].
+  static double topScore(List<Hit> hits) => hits.fold(0.0, (m, h) => h.score > m ? h.score : m);
 
   // ------------------------------------------------------------------ memory
 

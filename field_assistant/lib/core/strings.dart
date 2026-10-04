@@ -448,7 +448,7 @@ class WeatherStrings {
 // ------------------------------------------------------------------ English
 
 final S _en = S(
-  appName: 'Field Assistant',
+  appName: 'Botato',
   offlineBadge: 'Works offline',
   language: 'Language',
   answersLanguageNote: 'Answers follow the language of your question.',
@@ -775,7 +775,7 @@ final S _en = S(
 // ---------------------------------------------------------------- Kiswahili
 
 final S _sw = S(
-  appName: 'Msaidizi wa Shamba',
+  appName: 'Botato',
   offlineBadge: 'Inafanya kazi bila mtandao',
   language: 'Lugha',
   answersLanguageNote: 'Majibu yanafuata lugha ya swali lako.',
@@ -1106,7 +1106,7 @@ final S _sw = S(
 // ------------------------------------------------------------------- French
 
 final S _fr = S(
-  appName: 'Assistant agricole',
+  appName: 'Botato',
   offlineBadge: 'Fonctionne hors ligne',
   language: 'Langue',
   answersLanguageNote: 'Les réponses suivent la langue de votre question.',

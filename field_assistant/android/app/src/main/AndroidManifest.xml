@@ -5,7 +5,7 @@
          No fine or background location — background refreshes use the saved, rounded location. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <application
-        android:label="Field Assistant"
+        android:label="Botato"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <!-- Optional GPU (OpenCL) acceleration for LiteRT-LM on Android. -->
