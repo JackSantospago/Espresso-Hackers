@@ -6,6 +6,8 @@ import '../core/strings.dart';
 import 'brain.dart';
 import 'leaf_classifier.dart' if (dart.library.js_interop) 'leaf_classifier_stub.dart';
 import 'outbox.dart';
+import 'weather.dart';
+import 'weather_risk.dart';
 
 /// One message in the conversation. Assistant replies carry structured
 /// fail-safe information so the UI can show it clearly, not as raw text.
@@ -49,6 +51,9 @@ enum AssistantState { loading, ready, failed }
 /// the answer → fail-safe flags → extract durable facts the farmer stated.
 /// Flow per photo: on-device classifier → (not confident | healthy | disease)
 /// → only a confident disease reaches the LLM, grounded on the knowledge base.
+/// Flow per weather check: the rules find the warnings → no warnings: fixed
+/// answer, no LLM → warnings: the LLM explains what to do, grounded on the
+/// knowledge base and on what the farmer said about the crops (memory).
 class Assistant extends ChangeNotifier {
   Assistant(this.strings);
 
@@ -56,6 +61,15 @@ class Assistant extends ChangeNotifier {
   S strings;
 
   final turns = <ChatTurn>[];
+
+  /// The last "What should I do?" answer in Grow → Weather, and the forecast
+  /// it was made for (a newer forecast hides it).
+  ChatTurn? weatherAdvice;
+  DateTime? weatherAdviceFor;
+
+  /// The weather advice is being written, and what it is doing right now.
+  bool weatherBusy = false;
+  String weatherStatus = '';
   AssistantState state = AssistantState.loading;
   Object? error;
   bool busy = false;
@@ -163,22 +177,27 @@ class Assistant extends ChangeNotifier {
     _notify();
 
     try {
-      // 1. Retrieve from knowledge + memory
+      // 1. Retrieve from knowledge + memory, and the saved forecast (null when weather is off)
       final hits = await Brain.searchKnowledge(question);
       final mems = await Brain.relevantMemories(question);
       final top = hits.isEmpty ? 0.0 : hits.first.score;
       final confident = top >= kConfidenceThreshold;
+      final forecast = await Weather.savedForecast();
+      final weather = forecast == null
+          ? ''
+          : '\nWEATHER (forecast for the farm; use it only if it matters for the QUESTION):\n'
+              '${forecastForPrompt(forecast, DateTime.now())}\n';
 
       final prompt = '''
 You are an offline farming assistant for smallholder coffee farmers.
-Rules: Answer ONLY from CONTEXT and MEMORY below. Max 5 short sentences, plain words.
-If CONTEXT does not contain the answer, reply exactly: "${s.notSure}"
+Rules: Answer ONLY from CONTEXT, MEMORY${weather.isEmpty ? '' : ' and WEATHER'} below. Max 5 short sentences, plain words.
+${weather.isEmpty ? 'If CONTEXT does not contain' : 'If neither CONTEXT nor WEATHER contains'} the answer, reply exactly: "${s.notSure}"
 Never invent prices, numbers or chemical doses. The farmer makes the final decision.
 Reply in the same language as the QUESTION.
 
 MEMORY (facts about this farmer):
 ${_bullets(mems)}
-
+$weather
 CONTEXT:
 ${_context(hits)}
 
@@ -325,6 +344,125 @@ QUESTION: $asked''';
     } finally {
       busy = false;
       status = '';
+      _notify();
+    }
+  }
+
+  // ---------------------------------------------------------- weather check
+
+  /// "What should I do?" in Grow → Weather. The rules already found [alerts]
+  /// in [forecast]; the LLM only explains how to protect the crops, and only
+  /// for the warnings the guides cover. Uses [weatherStatus], not [status], so
+  /// the chat's status strip does not show weather progress.
+  Future<void> assessWeather(Forecast forecast, List<WeatherAlert> alerts) async {
+    if (busy) return;
+    final s = strings;
+    final w = s.weather;
+    final now = DateTime.now();
+    final staleNote = forecast.isStale(now) ? w.stale(w.ago(forecast.age(now))) : '';
+
+    // 1. No warnings → fixed answer, nothing for the LLM to explain (works without the model).
+    if (alerts.isEmpty) {
+      weatherAdvice = ChatTurn(w.noAlertsAnswer, fromUser: false)
+        ..warning = staleNote
+        ..caution = w.caution
+        ..details = 'no warnings in ${forecast.upcoming(now).length} forecast days';
+      weatherAdviceFor = forecast.fetchedAt;
+      _notify();
+      return;
+    }
+    if (_chat == null) return;
+
+    final reply = ChatTurn('', fromUser: false);
+    weatherAdvice = reply;
+    weatherAdviceFor = forecast.fetchedAt;
+    busy = true;
+    weatherBusy = true;
+    weatherStatus = w.statusChecking;
+    _notify();
+
+    try {
+      // 2. Protection advice for EVERY kind of warning. A warning the guides do
+      //    not cover (weak best match) is not explained by the LLM: it gets
+      //    "ask your extension officer" instead of invented advice.
+      final covered = <WeatherAlert>[], uncovered = <WeatherAlert>[];
+      final found = <Hit>[];
+      final best = <WeatherRisk, double>{};
+      for (final r in alerts.map((a) => a.risk).toSet()) {
+        final hits = await Brain.searchKnowledge(riskQuery(r), k: 2);
+        best[r] = hits.isEmpty ? 0.0 : hits.first.score;
+        if (best[r]! >= kConfidenceThreshold) found.addAll(hits);
+      }
+      for (final a in alerts) {
+        (best[a.risk]! >= kConfidenceThreshold ? covered : uncovered).add(a);
+      }
+      found.sort((a, b) => b.score.compareTo(a.score));
+      final seen = <String>{};
+      final hits = found.where((h) => seen.add(h.text)).take(5).toList();
+      final scores = best.entries.map((e) => '${e.key.name} ${e.value.toStringAsFixed(2)}').join(', ');
+
+      // Nothing in the guides for any warning: say so, without the LLM.
+      if (covered.isEmpty) {
+        reply
+          ..text = s.notSure
+          ..notSure = true
+          ..warning = staleNote
+          ..caution = w.caution
+          ..details = '${alerts.map(alertForPrompt).join(' ')} · match $scores';
+        return;
+      }
+
+      final mems = await Brain.relevantMemories(
+          'my crops and how they are doing: growth stage, flowering, young plants, harvest, health');
+      final prompt = '''
+You are an offline farming assistant for smallholder farmers.
+The app's weather rules found these warnings in the forecast for the farm:
+${covered.map((a) => '- ${alertForPrompt(a)}').join('\n')}
+Rules: Use ONLY the CONTEXT and MEMORY below. Max 6 short sentences, plain words.
+Start with the most urgent warning. For each warning, say what the farmer can do now to protect the crops.
+Use MEMORY to fit the advice to the farmer's crops and how they are doing now.
+If CONTEXT says nothing about protecting crops from these warnings, reply exactly: "${s.notSure}"
+Never invent prices, numbers or chemical doses. Do not repeat the forecast numbers. The farmer makes the final decision.
+${uncovered.isEmpty ? '' : 'The guides say nothing about: ${uncovered.map((a) => alertForPrompt(a)).join(' ')} '
+          'End with one sentence saying to ask the extension officer about that.\n'}Reply in ${w.replyLanguage}.
+
+MEMORY (facts about this farmer and the crops):
+${_bullets(mems)}
+
+CONTEXT:
+${_context(hits)}''';
+
+      // 3. Generate (streamed into Grow → Weather)
+      weatherStatus = s.statusThinking;
+      _notify();
+      final answer = await _generate(prompt, onPartial: (t) {
+        reply.text = t;
+        weatherStatus = '';
+        _notify();
+      });
+
+      // 4. Fail-safes: not sure, warnings the guides do not cover, old forecast
+      final notSure = answer.isEmpty || _saysNotSure(answer);
+      final top = hits.isEmpty ? 0.0 : hits.first.score;
+      reply
+        ..text = answer.isEmpty ? s.notSure : answer
+        ..notSure = notSure
+        ..warning = [staleNote, if (uncovered.isNotEmpty && !notSure) s.weakMatch]
+            .where((x) => x.isNotEmpty)
+            .join('\n')
+        ..caution = w.caution
+        ..sources = _sources(hits)
+        ..match = top
+        ..details = '${alerts.map(alertForPrompt).join(' ')} · match $scores · ${activeLlm.label}';
+    } catch (e) {
+      reply
+        ..text = s.notSure
+        ..notSure = true
+        ..details = 'weather error: $e';
+    } finally {
+      busy = false;
+      weatherBusy = false;
+      weatherStatus = '';
       _notify();
     }
   }

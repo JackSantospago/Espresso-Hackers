@@ -105,6 +105,7 @@ class S {
     required this.guidesTitle,
     required this.guidesNote,
     required this.seeAllGuides,
+    required this.weather,
     required this.guidesEmpty,
     required this.askAbout,
     required this.askAboutThis,
@@ -219,6 +220,9 @@ class S {
   final String Function(int waiting, int sent) officerSummary;
   final String guidesAll, guidesCoffee, guidesMaize, guidesBeans, guidesMore, guidesSearch, guidesNoMatch;
 
+  // Grow → Weather (forecast card and screen, weather advice)
+  final WeatherStrings weather;
+
   // Memory
   final String memoryTitle, memoryIntro, memoryEmpty, forget, forgotten, forgetAll, forgetAllConfirm;
 
@@ -234,6 +238,85 @@ class S {
   final List<String> how, privacy, limits;
   final String onThisPhone, modelLlm, modelEmbedder, modelLeaf, installed, notInstalled;
   final String Function(int n) passages;
+}
+
+/// Texts of the weather card and screen in Grow, and of the weather advice.
+class WeatherStrings {
+  const WeatherStrings({
+    required this.title,
+    required this.screenTitle,
+    required this.intro,
+    required this.privacyNote,
+    required this.turnOn,
+    required this.setUp,
+    required this.locating,
+    required this.farmHere,
+    required this.turnOff,
+    required this.turnOffConfirm,
+    required this.permissionDenied,
+    required this.locationOff,
+    required this.noFix,
+    required this.openSettings,
+    required this.notUpdated,
+    required this.waiting,
+    required this.updating,
+    required this.updated,
+    required this.stale,
+    required this.ago,
+    required this.farmAt,
+    required this.warningsTitle,
+    required this.nextDays,
+    required this.noAlerts,
+    required this.askWhatToDo,
+    required this.statusChecking,
+    required this.noAlertsAnswer,
+    required this.caution,
+    required this.attribution,
+    required this.today,
+    required this.tomorrow,
+    required this.frost,
+    required this.heat,
+    required this.heavyRain,
+    required this.wind,
+    required this.storm,
+    required this.hail,
+    required this.drySpell,
+    required this.wetSpell,
+    required this.frostDetail,
+    required this.heatDetail,
+    required this.rainDetail,
+    required this.windDetail,
+    required this.daysCount,
+    required this.dryDetail,
+    required this.wetDetail,
+    required this.weekdays,
+    required this.months,
+    required this.replyLanguage,
+  });
+
+  final String title, screenTitle, intro, privacyNote, turnOn, setUp, locating, farmHere, turnOff, turnOffConfirm;
+  final String permissionDenied, locationOff, noFix, openSettings, notUpdated, waiting, updating;
+  final String Function(String ago) updated, stale;
+  final String Function(Duration age) ago;
+  final String Function(String place, int? elevation) farmAt;
+  final String warningsTitle;
+  final String Function(int n) nextDays;
+  final String noAlerts, askWhatToDo, statusChecking, noAlertsAnswer, caution, attribution, today, tomorrow;
+
+  // Warning titles and details (numbers come from the app's rules, not the LLM)
+  final String frost, heat, heavyRain, wind, storm, hail, drySpell, wetSpell;
+  final String Function(int c) frostDetail, heatDetail;
+  final String Function(int mm) rainDetail;
+  final String Function(int kmh) windDetail;
+  final String Function(int n) daysCount, dryDetail, wetDetail;
+
+  /// Monday first / January first.
+  final List<String> weekdays, months;
+
+  /// The language the LLM is asked to write the weather advice in.
+  final String replyLanguage;
+
+  String date(DateTime d) => '${weekdays[d.weekday - 1]} ${d.day} ${months[d.month - 1]}';
 }
 
 // ------------------------------------------------------------------ English
@@ -362,6 +445,66 @@ final S _en = S(
   guidesTitle: 'Guides on this phone',
   guidesNote: 'Sourced extension material, stored on this phone. Readable without internet.',
   seeAllGuides: (n) => 'See all $n guides',
+  weather: WeatherStrings(
+    title: 'Weather',
+    screenTitle: 'Weather for your farm',
+    intro: 'Get a 14-day forecast for your farm, and a warning when frost, heavy rain, strong wind, heat '
+        'or a long dry or wet spell is coming — with advice on how to protect your crops.',
+    privacyNote: 'Stand on your farm and tap the button. The app saves the farm\'s approximate location '
+        '(about 5 km) on this phone. Whenever the phone is online, it sends only that approximate location '
+        'to Open-Meteo, a free weather service, to download the forecast. Nothing else leaves the phone.',
+    turnOn: "I'm at my farm — turn on weather",
+    setUp: 'Turn on weather',
+    locating: 'Finding your farm…',
+    farmHere: "I'm at my farm now — update location",
+    turnOff: 'Turn off weather',
+    turnOffConfirm: 'Stop weather forecasts? The saved farm location and forecast are deleted from this phone.',
+    permissionDenied: 'The app is not allowed to use your location. Allow it in the phone settings, then try again.',
+    locationOff: 'Location is turned off on this phone. Turn it on, then try again.',
+    noFix: 'Could not find your location. Go outside, wait a moment and try again.',
+    openSettings: 'Open settings',
+    notUpdated: 'Could not update the forecast. It will try again when the phone is online.',
+    waiting: 'No forecast yet. It downloads automatically the next time the phone is online.',
+    updating: 'Updating the forecast…',
+    updated: (ago) => 'Updated $ago',
+    stale: (ago) => 'Downloaded $ago — it may be out of date. It updates when the phone is online.',
+    ago: (d) => d.inHours < 1
+        ? 'less than an hour ago'
+        : d.inHours < 48
+            ? '${d.inHours} hour${d.inHours == 1 ? '' : 's'} ago'
+            : '${d.inDays} days ago',
+    farmAt: (place, elev) => 'Farm area ≈ $place${elev == null ? '' : ' · $elev m'}',
+    warningsTitle: 'Weather warnings',
+    nextDays: (n) => 'Next $n days',
+    noAlerts: 'No extreme weather in the forecast.',
+    askWhatToDo: 'What should I do?',
+    statusChecking: 'Checking the warnings against your crops…',
+    noAlertsAnswer: 'The forecast shows no extreme weather for the coming days, so no special protection is '
+        'needed now. Keep caring for your crops as usual — check again after the next update.',
+    caution: 'Forecasts can be wrong, especially after the first week. Look at the sky and your crops too, and '
+        'ask your extension officer before buying or spraying anything.',
+    attribution: 'Weather data: Open-Meteo.com (CC BY 4.0)',
+    today: 'Today',
+    tomorrow: 'Tomorrow',
+    frost: 'Frost risk',
+    heat: 'Very hot days',
+    heavyRain: 'Heavy rain',
+    wind: 'Strong wind',
+    storm: 'Thunderstorms',
+    hail: 'Thunderstorms with hail',
+    drySpell: 'Dry spell',
+    wetSpell: 'Long wet, humid spell',
+    frostDetail: (c) => 'Nights down to $c °C',
+    heatDetail: (c) => 'Up to $c °C',
+    rainDetail: (mm) => 'About $mm mm in total',
+    windDetail: (kmh) => 'Gusts up to $kmh km/h',
+    daysCount: (n) => n == 1 ? '1 day' : '$n days',
+    dryDetail: (n) => '$n days in a row with almost no rain',
+    wetDetail: (n) => '$n days in a row of rain and humid air — fungal diseases spread easily',
+    weekdays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    replyLanguage: 'English',
+  ),
   guidesEmpty: 'No guides on this phone yet.',
   askAbout: (topic) => 'Tell me more about: $topic',
   askAboutThis: 'Ask about this',
@@ -412,12 +555,15 @@ final S _en = S(
     'Everything stays on this phone: your questions, the answers and the facts I remember.',
     'Conversations are not saved — they disappear when you close the app.',
     'Only leaf photos you choose to send go to the extension officer, with no name and no location.',
+    "Weather (only if you turn it on): the farm's approximate location (about 5 km) is sent to "
+        'Open-Meteo to download the forecast. Turn it off in Grow → Weather to delete it.',
     'Sharing this phone? Use "Forget everything" in My farm, and delete photos in Officer.',
   ],
   limitsTitle: 'What it cannot do',
   limits: [
     'It only knows what is in its guides. It can be wrong.',
     'The photo check knows coffee, bean and maize leaves only.',
+    'Weather forecasts can be wrong, especially more than a week ahead.',
     'It never gives prices or chemical doses.',
   ],
   onThisPhone: 'On this phone',
@@ -556,6 +702,68 @@ final S _sw = S(
   guidesTitle: 'Miongozo kwenye simu hii',
   guidesNote: 'Taarifa za ugani zenye vyanzo, zimehifadhiwa kwenye simu hii. Zinasomeka bila intaneti.',
   seeAllGuides: (n) => 'Ona miongozo yote $n',
+  weather: WeatherStrings(
+    title: 'Hali ya hewa',
+    screenTitle: 'Hali ya hewa shambani',
+    intro: 'Pata utabiri wa siku 14 kwa shamba lako, na tahadhari kabla ya baridi kali, mvua kubwa, upepo '
+        'mkali, joto kali au vipindi virefu vya ukame au mvua — pamoja na ushauri wa kulinda mazao yako.',
+    privacyNote: 'Simama shambani kwako na ubonyeze kitufe. Programu inahifadhi mahali pa shamba kwa makadirio '
+        '(karibu km 5) kwenye simu hii. Kila simu ikiwa na mtandao, inatuma makadirio hayo tu kwa Open-Meteo, '
+        'huduma ya bure ya hali ya hewa, ili kupakua utabiri. Hakuna kingine kinachotoka kwenye simu.',
+    turnOn: 'Niko shambani — washa hali ya hewa',
+    setUp: 'Washa hali ya hewa',
+    locating: 'Inatafuta shamba lako…',
+    farmHere: 'Niko shambani sasa — sasisha mahali',
+    turnOff: 'Zima hali ya hewa',
+    turnOffConfirm: 'Acha utabiri wa hali ya hewa? Mahali pa shamba na utabiri uliohifadhiwa vitafutwa kwenye '
+        'simu hii.',
+    permissionDenied: 'Programu hairuhusiwi kutumia mahali ulipo. Iruhusu kwenye mipangilio ya simu, kisha '
+        'ujaribu tena.',
+    locationOff: 'Huduma ya mahali imezimwa kwenye simu hii. Iwashe, kisha ujaribu tena.',
+    noFix: 'Imeshindwa kupata mahali ulipo. Toka nje, subiri kidogo kisha ujaribu tena.',
+    openSettings: 'Fungua mipangilio',
+    notUpdated: 'Imeshindwa kusasisha utabiri. Itajaribu tena simu ikiwa na mtandao.',
+    waiting: 'Bado hakuna utabiri. Utapakuliwa wenyewe simu ikipata mtandao.',
+    updating: 'Inasasisha utabiri…',
+    updated: (ago) => 'Imesasishwa $ago',
+    stale: (ago) => 'Ulipakuliwa $ago — huenda umepitwa na wakati. Unasasishwa simu ikiwa na mtandao.',
+    ago: (d) => d.inHours < 1
+        ? 'chini ya saa moja iliyopita'
+        : d.inHours < 48
+            ? 'saa ${d.inHours} zilizopita'
+            : 'siku ${d.inDays} zilizopita',
+    farmAt: (place, elev) => 'Eneo la shamba ≈ $place${elev == null ? '' : ' · mita $elev'}',
+    warningsTitle: 'Tahadhari za hali ya hewa',
+    nextDays: (n) => 'Siku $n zijazo',
+    noAlerts: 'Hakuna hali mbaya ya hewa katika utabiri.',
+    askWhatToDo: 'Nifanye nini?',
+    statusChecking: 'Inalinganisha tahadhari na mazao yako…',
+    noAlertsAnswer: 'Utabiri hauonyeshi hali mbaya ya hewa kwa siku zijazo, kwa hiyo hakuna kinga maalum '
+        'inayohitajika sasa. Endelea kutunza mazao yako kama kawaida — angalia tena baada ya kusasisha.',
+    caution: 'Utabiri unaweza kukosea, hasa baada ya wiki ya kwanza. Angalia pia anga na mazao yako, na muulize '
+        'afisa ugani kabla ya kununua au kunyunyizia chochote.',
+    attribution: 'Data ya hali ya hewa: Open-Meteo.com (CC BY 4.0)',
+    today: 'Leo',
+    tomorrow: 'Kesho',
+    frost: 'Hatari ya baridi kali',
+    heat: 'Siku za joto kali',
+    heavyRain: 'Mvua kubwa',
+    wind: 'Upepo mkali',
+    storm: 'Radi na dhoruba',
+    hail: 'Dhoruba yenye mvua ya mawe',
+    drySpell: 'Kipindi cha ukame',
+    wetSpell: 'Kipindi kirefu cha mvua na unyevu',
+    frostDetail: (c) => 'Usiku hadi $c °C',
+    heatDetail: (c) => 'Hadi $c °C',
+    rainDetail: (mm) => 'Jumla ya karibu mm $mm',
+    windDetail: (kmh) => 'Upepo hadi km $kmh kwa saa',
+    daysCount: (n) => 'siku $n',
+    dryDetail: (n) => 'Siku $n mfululizo karibu bila mvua',
+    wetDetail: (n) => 'Siku $n mfululizo za mvua na unyevu — magonjwa ya ukungu huenea kwa urahisi',
+    weekdays: ['Jumatatu', 'Jumanne', 'Jumatano', 'Alhamisi', 'Ijumaa', 'Jumamosi', 'Jumapili'],
+    months: ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ago', 'Sep', 'Okt', 'Nov', 'Des'],
+    replyLanguage: 'Swahili',
+  ),
   guidesEmpty: 'Bado hakuna miongozo kwenye simu hii.',
   askAbout: (topic) => 'Nieleze zaidi kuhusu: $topic',
   askAboutThis: 'Uliza kuhusu hili',
@@ -607,12 +815,15 @@ final S _sw = S(
     'Kila kitu kinabaki kwenye simu hii: maswali yako, majibu na mambo ninayokumbuka.',
     'Mazungumzo hayahifadhiwi — yanapotea unapofunga programu.',
     'Ni picha za majani unazochagua kutuma tu zinazokwenda kwa afisa ugani, bila jina wala mahali.',
+    'Hali ya hewa (ukiiwasha tu): mahali pa shamba kwa makadirio (karibu km 5) panatumwa kwa Open-Meteo '
+        'ili kupakua utabiri. Izime kwenye Kilimo → Hali ya hewa ili kuifuta.',
     'Unashirikiana simu hii? Tumia "Sahau kila kitu" kwenye Shamba langu, na futa picha kwenye Afisa.',
   ],
   limitsTitle: 'Isichoweza kufanya',
   limits: [
     'Inajua tu kilichomo kwenye miongozo yake. Inaweza kukosea.',
     'Ukaguzi wa picha unajua majani ya kahawa, maharage na mahindi tu.',
+    'Utabiri wa hali ya hewa unaweza kukosea, hasa zaidi ya wiki moja mbele.',
     'Haitoi bei wala vipimo vya dawa.',
   ],
   onThisPhone: 'Kwenye simu hii',
@@ -751,6 +962,73 @@ final S _fr = S(
   guidesTitle: 'Guides sur ce téléphone',
   guidesNote: 'Documents de vulgarisation sourcés, stockés sur ce téléphone. Lisibles sans internet.',
   seeAllGuides: (n) => 'Voir les $n guides',
+  weather: WeatherStrings(
+    title: 'Météo',
+    screenTitle: 'Météo de votre ferme',
+    intro: 'Recevez une prévision sur 14 jours pour votre ferme, et une alerte quand du gel, de fortes pluies, '
+        'du vent fort, de la chaleur ou une longue période sèche ou humide arrive — avec des conseils pour '
+        'protéger vos cultures.',
+    privacyNote: "Placez-vous sur votre ferme et touchez le bouton. L'application enregistre la position "
+        'approximative de la ferme (à environ 5 km près) sur ce téléphone. Dès que le téléphone est en ligne, '
+        'elle envoie seulement cette position approximative à Open-Meteo, un service météo gratuit, pour '
+        "télécharger la prévision. Rien d'autre ne quitte le téléphone.",
+    turnOn: 'Je suis sur ma ferme — activer la météo',
+    setUp: 'Activer la météo',
+    locating: 'Recherche de votre ferme…',
+    farmHere: 'Je suis sur ma ferme — mettre à jour la position',
+    turnOff: 'Désactiver la météo',
+    turnOffConfirm: 'Arrêter la météo ? La position de la ferme et la prévision enregistrées seront supprimées '
+        'de ce téléphone.',
+    permissionDenied: "L'application n'a pas le droit d'utiliser votre position. Autorisez-la dans les réglages "
+        'du téléphone, puis réessayez.',
+    locationOff: 'La localisation est désactivée sur ce téléphone. Activez-la, puis réessayez.',
+    noFix: "Position introuvable. Sortez à l'extérieur, attendez un instant et réessayez.",
+    openSettings: 'Ouvrir les réglages',
+    notUpdated: 'Impossible de mettre à jour la prévision. Nouvel essai dès que le téléphone sera en ligne.',
+    waiting: 'Pas encore de prévision. Elle se télécharge automatiquement dès que le téléphone est en ligne.',
+    updating: 'Mise à jour de la prévision…',
+    updated: (ago) => 'Mise à jour $ago',
+    stale: (ago) => 'Téléchargée $ago — elle peut être dépassée. Elle se met à jour dès que le téléphone est '
+        'en ligne.',
+    ago: (d) => d.inHours < 1
+        ? "il y a moins d'une heure"
+        : d.inHours < 48
+            ? 'il y a ${d.inHours} h'
+            : 'il y a ${d.inDays} jours',
+    farmAt: (place, elev) => 'Zone de la ferme ≈ $place${elev == null ? '' : ' · $elev m'}',
+    warningsTitle: 'Alertes météo',
+    nextDays: (n) => 'Les $n prochains jours',
+    noAlerts: 'Pas de météo extrême dans la prévision.',
+    askWhatToDo: 'Que dois-je faire ?',
+    statusChecking: 'Analyse des alertes pour vos cultures…',
+    noAlertsAnswer: "La prévision n'annonce pas de météo extrême pour les prochains jours : aucune protection "
+        "particulière n'est nécessaire pour l'instant. Continuez à entretenir vos cultures comme d'habitude — "
+        'vérifiez à nouveau après la prochaine mise à jour.',
+    caution: 'Les prévisions peuvent se tromper, surtout après la première semaine. Observez aussi le ciel et '
+        "vos cultures, et demandez à votre conseiller agricole avant d'acheter ou de pulvériser quoi que ce soit.",
+    attribution: 'Données météo : Open-Meteo.com (CC BY 4.0)',
+    today: "Aujourd'hui",
+    tomorrow: 'Demain',
+    frost: 'Risque de gel',
+    heat: 'Journées très chaudes',
+    heavyRain: 'Fortes pluies',
+    wind: 'Vent fort',
+    storm: 'Orages',
+    hail: 'Orages avec grêle',
+    drySpell: 'Période sèche',
+    wetSpell: 'Longue période humide',
+    frostDetail: (c) => "Nuits jusqu'à $c °C",
+    heatDetail: (c) => "Jusqu'à $c °C",
+    rainDetail: (mm) => 'Environ $mm mm au total',
+    windDetail: (kmh) => "Rafales jusqu'à $kmh km/h",
+    daysCount: (n) => n == 1 ? '1 jour' : '$n jours',
+    dryDetail: (n) => '$n jours de suite presque sans pluie',
+    wetDetail: (n) => "$n jours de suite de pluie et d'air humide — les maladies fongiques se propagent "
+        'facilement',
+    weekdays: ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'],
+    months: ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'],
+    replyLanguage: 'French',
+  ),
   guidesEmpty: 'Aucun guide sur ce téléphone pour le moment.',
   askAbout: (topic) => "Dites-m'en plus sur : $topic",
   askAboutThis: 'Poser une question',
@@ -802,12 +1080,15 @@ final S _fr = S(
     'Tout reste sur ce téléphone : vos questions, les réponses et ce dont je me souviens.',
     'Les conversations ne sont pas enregistrées — elles disparaissent à la fermeture.',
     "Seules les photos de feuilles que vous choisissez d'envoyer vont au conseiller, sans nom ni position.",
+    "Météo (seulement si vous l'activez) : la position approximative de la ferme (à environ 5 km près) est "
+        "envoyée à Open-Meteo pour télécharger la prévision. Désactivez-la dans Cultiver → Météo pour l'effacer.",
     'Téléphone partagé ? Utilisez « Tout oublier » dans Ma ferme et supprimez les photos dans Conseiller.',
   ],
   limitsTitle: "Ce qu'il ne sait pas faire",
   limits: [
     "Il ne connaît que ce qui est dans ses guides. Il peut se tromper.",
     'La vérification photo ne connaît que les feuilles de café, haricot et maïs.',
+    "Les prévisions météo peuvent se tromper, surtout au-delà d'une semaine.",
     'Il ne donne jamais de prix ni de doses de produits.',
   ],
   onThisPhone: 'Sur ce téléphone',

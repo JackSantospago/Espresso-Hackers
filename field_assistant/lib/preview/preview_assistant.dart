@@ -6,6 +6,8 @@ import 'package:flutter/foundation.dart';
 import '../services/assistant.dart';
 import '../services/brain.dart';
 import '../services/outbox.dart';
+import '../services/weather.dart';
+import '../services/weather_risk.dart';
 import '../frontend/shared/farm_data.dart';
 import 'fake_data.dart';
 import 'preview_options.dart';
@@ -112,6 +114,43 @@ class PreviewAssistant extends Assistant {
     reply.details = 'preview (no model)';
     busy = false;
     status = '';
+    notifyListeners();
+  }
+
+  @override
+  Future<void> assessWeather(Forecast forecast, List<WeatherAlert> alerts) async {
+    if (busy) return;
+    final w = strings.weather;
+    final reply = ChatTurn('', fromUser: false);
+    weatherAdvice = reply;
+    weatherAdviceFor = forecast.fetchedAt;
+    busy = true;
+    weatherBusy = true;
+    if (alerts.isEmpty) {
+      reply.text = w.noAlertsAnswer;
+    } else {
+      weatherStatus = w.statusChecking;
+      notifyListeners();
+      await Future<void>.delayed(const Duration(milliseconds: 900));
+      weatherStatus = '';
+      const text = 'Cover young plants and nursery beds on the cold night and take the cover off in the morning. '
+          'Before the heavy rain, clear drainage channels and keep the soil covered with mulch. '
+          'In the long wet spell, check leaves and berries for rust every few days.';
+      final words = text.split(' ');
+      for (var i = 0; i < words.length; i++) {
+        reply.text = words.take(i + 1).join(' ');
+        notifyListeners();
+        await Future<void>.delayed(const Duration(milliseconds: 60));
+      }
+      reply
+        ..sources = const ['soil_types.md', 'coffee_leaf_rust.md']
+        ..match = 0.44;
+    }
+    reply
+      ..caution = w.caution
+      ..details = '${alerts.map(alertForPrompt).join(' ')} · preview (no model)';
+    busy = false;
+    weatherBusy = false;
     notifyListeners();
   }
 

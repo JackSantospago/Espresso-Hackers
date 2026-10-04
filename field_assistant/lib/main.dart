@@ -8,6 +8,7 @@ import 'app.dart';
 import 'core/app_settings.dart';
 import 'core/config.dart';
 import 'services/brain.dart';
+import 'services/weather_sync.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,6 +25,7 @@ Future<void> main() async {
     huggingFaceToken: hfToken.isEmpty ? null : hfToken,
   );
   await Brain.open();
+  await WeatherSync.initBackground(); // background forecast refresh (scheduled once weather is on)
   final settings = AppSettings();
   await settings.load();
   runApp(FieldAssistantApp(settings: settings));

@@ -4,21 +4,29 @@ import '../../core/app_settings.dart';
 import '../../services/assistant.dart';
 import '../../services/brain.dart';
 import '../../services/outbox.dart';
+import '../../services/weather_sync.dart';
 import '../shared/farm_data.dart';
 import '../shared/guides.dart';
 import '../shared/ui.dart';
 import 'guides_screen.dart';
 import 'memory_screen.dart';
 import 'outbox_screen.dart';
+import 'weather_screen.dart';
+import 'weather_widgets.dart';
 
 /// "Grow": the farm at a glance, built only on things that are true offline.
+///  - Weather: the farm's forecast and warnings (downloaded whenever the phone
+///    is online, so the last one is always there), and "What should I do?".
 ///  - Your farm: what the app remembers, plus notes the farmer adds herself.
 ///  - Guides: the sourced material answers come from, readable directly.
 ///  - Extension officer: photos waiting for a person to review.
 class GrowScreen extends StatefulWidget {
-  const GrowScreen({super.key, required this.assistant, this.data = const FarmData(), this.onAsk});
+  const GrowScreen({super.key, required this.assistant, this.data = const FarmData(), this.weather, this.onAsk});
   final Assistant assistant;
   final FarmData data;
+
+  /// The farm's forecast. Null: no Weather card (e.g. a test of the other cards).
+  final WeatherSync? weather;
 
   /// Ask the assistant a question (switches to the Ask tab).
   final void Function(String question)? onAsk;
@@ -96,6 +104,13 @@ class _GrowScreenState extends State<GrowScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                   children: [
                     PageHeader(title: s.tabGrow),
+                    if (widget.weather != null) ...[
+                      ListenableBuilder(
+                        listenable: widget.weather!,
+                        builder: (context, _) => Column(children: _weatherGroup(context, widget.weather!)),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
                     ..._farm(context, facts),
                     const SizedBox(height: 24),
                     ..._guidesGroup(context, guides, facts),
@@ -106,6 +121,79 @@ class _GrowScreenState extends State<GrowScreen> {
               ),
       ),
     );
+  }
+
+  /// Off: what weather does, and a button to turn it on (the screen explains
+  /// what is sent). On: freshness, the next three days, the warnings, advice.
+  List<Widget> _weatherGroup(BuildContext context, WeatherSync weather) {
+    final w = context.s.weather;
+    final c = Theme.of(context).colorScheme;
+    final t = Theme.of(context).textTheme;
+    final now = DateTime.now();
+    final f = weather.forecast;
+    final days = weather.upcoming;
+    final alerts = weather.alerts;
+    void open({bool askNow = false}) =>
+        _open(WeatherScreen(weather: weather, assistant: widget.assistant, askNow: askNow));
+    final note = weather.updating ? w.updating : weatherProblemText(w, weather.problem);
+
+    return [
+      SectionLabel(
+        w.title,
+        action: weather.enabled ? context.s.seeAll : null,
+        onAction: weather.enabled ? open : null,
+      ),
+      Card(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            if (!weather.enabled) ...[
+              Text(w.intro, style: t.bodyMedium?.copyWith(color: c.onSurfaceVariant)),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: open,
+                icon: const Icon(Icons.my_location, size: 20),
+                label: Text(w.setUp),
+              ),
+            ] else if (f == null)
+              Text(w.waiting, style: t.bodyMedium?.copyWith(color: c.onSurfaceVariant))
+            else if (days.isEmpty) // every forecast day is in the past
+              Text(w.stale(w.ago(f.age(now))), style: t.bodyMedium?.copyWith(color: c.tertiary))
+            else ...[
+              Text(w.updated(w.ago(f.age(now))), style: t.bodySmall),
+              const SizedBox(height: 10),
+              Row(children: [
+                for (final d in days.take(3)) Expanded(child: DayColumn(day: d, now: now)),
+              ]),
+              const SizedBox(height: 8),
+              const Divider(),
+              if (alerts.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(children: [
+                    Icon(Icons.check_circle_outline, size: 20, color: c.primary),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(w.noAlerts, style: t.bodyMedium)),
+                  ]),
+                )
+              else
+                for (final a in alerts.take(3)) AlertTile(alert: a, compact: true),
+              if (weather.stale) Text(w.stale(w.ago(f.age(now))), style: t.bodySmall?.copyWith(color: c.tertiary)),
+              const SizedBox(height: 10),
+              FilledButton.tonalIcon(
+                onPressed: () => open(askNow: true),
+                icon: const Icon(Icons.health_and_safety_outlined),
+                label: Text(w.askWhatToDo),
+              ),
+            ],
+            if (weather.enabled && note != null) ...[
+              const SizedBox(height: 8),
+              Text(note, style: t.bodySmall?.copyWith(color: c.tertiary)),
+            ],
+          ]),
+        ),
+      ),
+    ];
   }
 
   List<Widget> _farm(BuildContext context, List<MemoryItem> facts) {

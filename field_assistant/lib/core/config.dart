@@ -13,6 +13,44 @@ const kConfidenceThreshold = 0.2;
 ///   flutter run --dart-define=OUTBOX_URL=https://…
 const kOutboxUrl = String.fromEnvironment('OUTBOX_URL');
 
+// ------------------------------------------------------------------ weather
+
+/// Open-Meteo forecast API: free, no key. Data is CC BY 4.0 (attribution is in
+/// Grow → Weather). The free tier is for non-commercial use and <10k calls a
+/// day; a production rollout needs their paid plan or a self-hosted instance.
+const kWeatherApi = 'https://api.open-meteo.com/v1/forecast';
+const kForecastDays = 14;
+
+/// The farm location is rounded to this many degrees before it is stored or
+/// sent (0.05° ≈ 5 km). Coarser is more private, but in hilly coffee areas the
+/// forecast temperature follows the altitude of the rounded point.
+const kLocationStepDeg = 0.05;
+
+/// Refresh the forecast at most this often (app open, back online, background).
+const kWeatherRefreshEvery = Duration(hours: 3);
+
+/// After this, the weather view and the advice say the forecast may be out of date.
+const kWeatherStaleAfter = Duration(days: 2);
+
+/// When the app's rules raise a weather warning. STARTING VALUES — check them
+/// with your extension service for the crops and altitudes you serve.
+abstract final class WeatherLimits {
+  /// Night low at 2 m. Leaves on clear, still nights can be a few degrees colder than the air.
+  static const frostMinC = 2.0;
+  static const heatMaxC = 32.0;
+  static const heavyRainDayMm = 50.0;
+  static const heavyRain3DaysMm = 100.0;
+  static const windGustKmh = 60.0;
+
+  /// Days in a row below [wetDayMm].
+  static const drySpellDays = 10;
+
+  /// Days in a row with rain AND humid air — weather in which fungal diseases spread.
+  static const wetSpellDays = 4;
+  static const wetDayMm = 1.0;
+  static const humidPct = 80;
+}
+
 class LlmChoice {
   const LlmChoice({
     required this.label,

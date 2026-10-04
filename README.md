@@ -6,7 +6,9 @@ An offline field assistant for smallholder coffee farmers like Noor: she asks qu
 language and checks leaf photos, and everything runs on the phone after a one-time download. Answers come
 only from sourced extension material stored on the device. When the app is not sure, it says so and points
 her to her extension officer or cooperative. Photos go to an officer only when she chooses to send them,
-and they wait on the phone until there is signal.
+and they wait on the phone until there is signal. If she turns weather on (Grow → Weather), the phone
+downloads a 14-day forecast for her farm whenever it is online, warns her about frost, heavy rain, heat, wind and
+long dry or wet spells, and suggests how to protect her crops.
 
 ## Repository layout
 | Path | What it is |

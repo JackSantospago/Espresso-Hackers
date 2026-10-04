@@ -11,6 +11,7 @@ import 'core/app_settings.dart';
 import 'preview/phone_frame.dart';
 import 'preview/preview_options.dart';
 import 'preview/preview_assistant.dart';
+import 'preview/preview_weather.dart';
 import 'frontend/shell/home_shell.dart';
 import 'frontend/shared/theme.dart';
 
@@ -57,6 +58,7 @@ class _PreviewHome extends StatefulWidget {
 
 class _PreviewHomeState extends State<_PreviewHome> {
   final _data = PreviewFarmData();
+  final _weather = PreviewWeather(on: PreviewOptions.weatherOn);
   PreviewAssistant? _assistant;
 
   @override
@@ -67,5 +69,5 @@ class _PreviewHomeState extends State<_PreviewHome> {
 
   @override
   Widget build(BuildContext context) =>
-      HomeShell(assistant: _assistant, data: _data, initialTab: PreviewOptions.tab);
+      HomeShell(assistant: _assistant, data: _data, weather: _weather, initialTab: PreviewOptions.tab);
 }

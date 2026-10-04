@@ -33,3 +33,5 @@ The files in `assets/knowledge/` were written in plain language from the sources
 - English only. The LLM answers in the farmer's language, but retrieval works best when the question and passages share a language.
 - Written for East African smallholders first. Coverage of temperate and irrigated farming is thin.
 - The Phoma material comes mainly from Brazil, which matches the BRACOL training images.
+- Weather warnings (Grow → Weather): no guide yet on protecting crops from hail or strong wind, and frost and heat
+  protection are only mentioned in passing, so "What should I do?" answers "not sure" for those.

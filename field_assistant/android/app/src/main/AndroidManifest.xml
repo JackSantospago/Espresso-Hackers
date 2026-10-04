@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Downloading the model file is a plain HTTPS GET. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Weather: approximate farm location only, asked once when the farmer turns weather on.
+         No fine or background location — background refreshes use the saved, rounded location. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <application
         android:label="Field Assistant"
         android:name="${applicationName}"

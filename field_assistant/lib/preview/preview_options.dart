@@ -8,11 +8,14 @@ import '../core/strings.dart';
 ///   chat    demo  (start on a conversation with every kind of message)
 ///   theme   light | dark       device  iphone | se | android
 ///   lang    en | sw | fr       frame   off  (fill the window, no phone)
+///   weather off  (start with weather not yet turned on)
 abstract final class PreviewOptions {
   static final Map<String, String> _q = Uri.base.queryParameters;
 
   static const _tabs = ['ask', 'grow', 'sell', 'help'];
   static int get tab => _tabs.indexOf(_q['tab'] ?? 'ask').clamp(0, _tabs.length - 1);
+
+  static bool get weatherOn => _q['weather'] != 'off';
 
   static bool get demoChat => (_q['chat'] ?? const String.fromEnvironment('PREVIEW_CHAT')) == 'demo';
 

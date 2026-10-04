@@ -8,6 +8,18 @@
 	<string>Take a photo of a leaf so the app can check it for disease, offline on your phone.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Choose a leaf photo so the app can check it for disease, offline on your phone.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Save your farm's approximate location (about 5 km) once, to download weather forecasts and warnings for it.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Save your farm's approximate location (about 5 km) once, to download weather forecasts and warnings for it. The app only asks for your location while it is open.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>org.hacknation.fieldassistant.weather</string>
+	</array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
