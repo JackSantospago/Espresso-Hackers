@@ -1,4 +1,4 @@
-# Field Assistant (Flutter) — on-device LLM + RAG + memory, Android & iOS
+# Botato (Flutter) — on-device LLM + RAG + memory, Android & iOS
 
 Everything runs on the phone after a one-time model download:
 - LLM: Qwen3 0.6B (.litertlm, ~0.6 GB) via Google LiteRT-LM — switch to Gemma 4 E2B in `lib/core/config.dart`

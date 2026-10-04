@@ -212,7 +212,9 @@ class _GroundingState extends State<_Grounding> {
                   ]),
                 ),
             ],
-            if (match != null)
+            // No "Good match" next to "Not sure": the score says the guides are
+            // on topic, not that they answer the question.
+            if (match != null && !turn.notSure)
               Row(mainAxisSize: MainAxisSize.min, children: [
                 Icon(Icons.circle, size: 8, color: strong ? c.primary : c.tertiary),
                 const SizedBox(width: 4),

@@ -209,7 +209,7 @@ class Assistant extends ChangeNotifier {
       // 1. Retrieve from knowledge + memory, and the saved forecast (null when weather is off)
       final hits = await Brain.searchKnowledge(question);
       final mems = await Brain.relevantMemories(question);
-      final top = hits.isEmpty ? 0.0 : hits.first.score;
+      final top = Brain.topScore(hits);
       final confident = top >= kConfidenceThreshold;
       final forecast = await Weather.savedForecast();
       final weather = forecast == null
@@ -427,7 +427,7 @@ QUESTION: $asked''';
         ..notSure = answer.isEmpty || _saysNotSure(answer)
         ..caution = s.photoCaution
         ..sources = _sources(hits)
-        ..match = hits.isEmpty ? 0.0 : hits.first.score
+        ..match = Brain.topScore(hits)
         ..details = photoNote + await _rememberPhoto(d);
 
       // What the farmer typed is mined for facts; the photo result itself was
@@ -491,7 +491,7 @@ QUESTION: $asked''';
       final best = <WeatherRisk, double>{};
       for (final r in alerts.map((a) => a.risk).toSet()) {
         final hits = await Brain.searchKnowledge(riskQuery(r), k: 2);
-        best[r] = hits.isEmpty ? 0.0 : hits.first.score;
+        best[r] = Brain.topScore(hits);
         if (best[r]! >= kConfidenceThreshold) found.addAll(hits);
       }
       for (final a in alerts) {
@@ -544,7 +544,7 @@ ${_context(hits)}''';
 
       // 4. Fail-safes: not sure, warnings the guides do not cover, old forecast
       final notSure = answer.isEmpty || _saysNotSure(answer);
-      final top = hits.isEmpty ? 0.0 : hits.first.score;
+      final top = Brain.topScore(hits);
       reply
         ..text = answer.isEmpty ? s.notSure : answer
         ..notSure = notSure
