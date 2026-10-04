@@ -7,11 +7,11 @@ import '../shared/harvest_widgets.dart';
 import '../shared/ui.dart';
 import 'market_demo.dart';
 
-/// "Sell": a fair, transparent marketplace, seen by the grower. Buyers make
-/// offers; each shows how it compares with the market reference, what the
-/// farmer receives and how she is paid. Accepted offers become sale records.
-/// DEMO: the data comes from [MarketDemo] (no marketplace backend yet), and the
-/// page says so with a "Demo" tag.
+/// "Sell": a fair, transparent marketplace, seen by the grower. Three things,
+/// readable at a glance: the season's harvest as a ring (sold, on offer, still
+/// to sell), the buyers' offers (each compared with the market), and the sales
+/// so far. DEMO: the data comes from [MarketDemo] (no marketplace backend yet),
+/// and the page says so with a "Demo" tag.
 class SellScreen extends StatefulWidget {
   const SellScreen({super.key, this.market, this.onAsk});
 
@@ -31,9 +31,6 @@ class _SellScreenState extends State<SellScreen> {
   /// The offer shown in the slide-in card, until the farmer acts on it.
   BuyerOffer? _alert;
   bool _alertIn = false;
-
-  /// Highlight the harvest card if the forecast is new since the last visit.
-  late final bool _forecastIsNew = _m.forecastNew;
 
   @override
   void initState() {
@@ -84,17 +81,19 @@ class _SellScreenState extends State<SellScreen> {
             builder: (context, _) => ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               children: [
-                PageHeader(title: s.sellTitle, trailing: const _DemoTag()),
-                ..._harvest(context),
-                const SizedBox(height: 24),
+                PageHeader(title: s.tabSell, trailing: const _DemoTag()),
+                _hero(context),
+                const SizedBox(height: 28),
                 ..._offers(context),
-                const SizedBox(height: 24),
-                ..._sales(context),
-                const SizedBox(height: 24),
-                SectionLabel(s.tipsTitle),
+                const SizedBox(height: 28),
                 GroupCard(children: [
-                  for (final (i, tip) in s.sellTips.indexed)
-                    RowTile(icon: const [Icons.compare_arrows_rounded, Icons.scale_outlined, Icons.receipt_long_outlined][i % 3], title: tip),
+                  RowTile(
+                    icon: Icons.receipt_long_outlined,
+                    title: s.salesTitle,
+                    trailing: Text(money(_m.seasonTotal),
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
+                    onTap: _showSales,
+                  ),
                 ]),
               ],
             ),
@@ -107,20 +106,20 @@ class _SellScreenState extends State<SellScreen> {
               child: IgnorePointer(
                 ignoring: !_alertIn,
                 child: AnimatedSlide(
-                offset: _alertIn ? Offset.zero : const Offset(0, -1.6),
-                duration: const Duration(milliseconds: 450),
-                curve: Curves.easeOutCubic,
-                child: AnimatedOpacity(
-                  opacity: _alertIn ? 1 : 0,
-                  duration: const Duration(milliseconds: 300),
-                  child: _OfferAlert(
-                    offer: _alert!,
-                    market: _m,
-                    onView: () => _view(_alert!),
-                    onDecline: () => _decline(_alert!),
+                  offset: _alertIn ? Offset.zero : const Offset(0, -1.6),
+                  duration: const Duration(milliseconds: 450),
+                  curve: Curves.easeOutCubic,
+                  child: AnimatedOpacity(
+                    opacity: _alertIn ? 1 : 0,
+                    duration: const Duration(milliseconds: 300),
+                    child: _OfferAlert(
+                      offer: _alert!,
+                      market: _m,
+                      onView: () => _view(_alert!),
+                      onDecline: () => _decline(_alert!),
+                    ),
                   ),
                 ),
-              ),
               ),
             ),
         ]),
@@ -128,64 +127,82 @@ class _SellScreenState extends State<SellScreen> {
     );
   }
 
-  /// The season at a glance: how much will grow (from the chat's forecast) and
-  /// how much of it is already sold, on offer, or still to sell.
-  List<Widget> _harvest(BuildContext context) {
+  /// The season at a glance. Before a forecast: one line and "Ask the assistant".
+  Widget _hero(BuildContext context) {
     final s = context.s;
     final c = Theme.of(context).colorScheme;
     final t = Theme.of(context).textTheme;
     final f = _m.forecast;
     if (f == null) {
-      return [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(children: [
-              const PotatoMascot(size: 48),
-              const SizedBox(width: 14),
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Row(children: [
+            const PotatoMascot(size: 52),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(s.askHarvestTitle, style: t.titleMedium),
+                if (widget.onAsk != null) ...[
+                  const SizedBox(height: 10),
+                  FilledButton.tonal(
+                    onPressed: () => widget.onAsk!(s.harvestQuestion),
+                    style: FilledButton.styleFrom(minimumSize: const Size(0, 40)),
+                    child: Text(s.askNow),
+                  ),
+                ],
+              ]),
+            ),
+          ]),
+        ),
+      );
+    }
+    Widget legend(Color color, String label, int kg) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Row(children: [
+            Container(width: 10, height: 10, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3))),
+            const SizedBox(width: 10),
+            Expanded(child: Text(label, style: t.bodyMedium?.copyWith(color: c.onSurfaceVariant))),
+            Text('${groupDigits(kg)} kg', style: t.titleMedium),
+          ]),
+        );
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _showWorking(f),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 20, 18, 16),
+          child: Column(children: [
+            Row(children: [
+              HarvestRing(
+                size: 128,
+                total: _m.seasonBase,
+                sold: _m.soldKg,
+                offered: _m.offeredKg,
+                center: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Text(groupDigits(_m.seasonBase), style: t.headlineSmall),
+                  Text('kg', style: t.labelMedium?.copyWith(color: c.onSurfaceVariant)),
+                ]),
+              ),
+              const SizedBox(width: 20),
               Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(s.askHarvestTitle, style: t.titleMedium),
-                  const SizedBox(height: 2),
-                  Text(s.askHarvestBody, style: t.bodySmall),
-                  if (widget.onAsk != null) ...[
-                    const SizedBox(height: 10),
-                    FilledButton.tonal(
-                      onPressed: () => widget.onAsk!(s.harvestQuestion),
-                      style: FilledButton.styleFrom(minimumSize: const Size(0, 40)),
-                      child: Text(s.askNow),
-                    ),
-                  ],
+                child: Column(children: [
+                  legend(c.primary, s.soldKg, _m.soldKg),
+                  legend(c.primary.withValues(alpha: 0.32), s.offeredKg, _m.offeredKg),
+                  legend(c.surfaceContainerHighest, s.toSellKg, _m.toSellKg),
                 ]),
               ),
             ]),
-          ),
-        ),
-      ];
-    }
-    return [
-      SectionLabel(s.harvestTitle, action: s.howWorked, onAction: () => _showWorking(f)),
-      Card(
-        shape: _forecastIsNew
-            ? RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: c.primary, width: 1.5))
-            : null,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Row(children: [
-              Expanded(child: Text(kgRange(f), style: t.headlineSmall)),
-              const EstimateTag(),
-            ]),
-            const SizedBox(height: 2),
-            Text(readyText(context, f), style: t.bodyMedium?.copyWith(color: c.primary, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 16),
-            HarvestBar(total: f.kgMid, sold: _m.soldKg, offered: _m.offeredKg),
-            const SizedBox(height: 12),
-            HarvestLegend(sold: _m.soldKg, offered: _m.offeredKg, toSell: _m.toSellKg),
+            const SizedBox(height: 14),
+            Text(
+              '${readyText(context, f)} · ${s.harvestEstimate} ${kgRange(f)}',
+              style: t.bodySmall,
+              textAlign: TextAlign.center,
+            ),
           ]),
         ),
       ),
-    ];
+    );
   }
 
   void _showWorking(HarvestForecast f) => showModalBottomSheet<void>(
@@ -211,57 +228,76 @@ class _SellScreenState extends State<SellScreen> {
     final c = Theme.of(context).colorScheme;
     return [
       SectionLabel(s.offersTitle),
-      if (_m.offers.isEmpty)
-        GroupCard(children: [RowTile(icon: Icons.inbox_outlined, title: s.noOffers)])
-      else
-        GroupCard(children: [
-          for (final o in _m.offers)
-            RowTile(
-              icon: o.verified ? Icons.verified_outlined : Icons.storefront_outlined,
-              iconColor: o.verified ? c.primary : null,
-              title: o.buyer,
-              titleStyle: t.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
-              subtitle: '${o.kg} kg · ${s.pickupIn(o.pickupInDays)}',
-              trailing: Column(crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
-                Text('${money(o.pricePerKg)}/kg', style: t.bodyMedium?.copyWith(fontWeight: FontWeight.w700)),
-                const SizedBox(height: 4),
-                FairnessTag(pct: _m.vsMarket(o)),
-              ]),
-              onTap: () => _view(o),
-            ),
-        ]),
-      // Transparency: the reference every offer is compared with.
-      Padding(
-        padding: const EdgeInsets.fromLTRB(4, 10, 4, 0),
-        child: Row(children: [
-          Icon(Icons.show_chart_rounded, size: 16, color: c.onSurfaceVariant),
-          const SizedBox(width: 8),
-          Expanded(child: Text(s.marketRef(money(_m.referencePrice)), style: t.bodySmall)),
-        ]),
-      ),
-    ];
-  }
-
-  List<Widget> _sales(BuildContext context) {
-    final s = context.s;
-    final t = Theme.of(context).textTheme;
-    final c = Theme.of(context).colorScheme;
-    return [
-      // The kilos are in the harvest bar above; here the money and each sale.
-      SectionLabel('${s.salesTitle} · ${money(_m.seasonTotal)}'),
       GroupCard(children: [
-        for (final sale in _m.sales)
+        if (_m.offers.isEmpty) RowTile(icon: Icons.inbox_outlined, title: s.noOffers),
+        for (final o in _m.offers)
           RowTile(
-            icon: sale.paid ? Icons.check_circle_outline_rounded : Icons.local_shipping_outlined,
-            iconColor: sale.paid ? c.primary : c.secondary,
-            title: sale.buyer,
-            subtitle: '${sale.kg} kg · ${money(sale.pricePerKg)}/kg · '
-                '${sale.paid ? s.statusPaid : s.pickupIn(sale.pickupInDays!)}',
-            trailing: Text(money(sale.total), style: t.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+            icon: o.verified ? Icons.verified_outlined : Icons.storefront_outlined,
+            iconColor: o.verified ? c.primary : null,
+            title: o.buyer,
+            titleStyle: t.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+            subtitle: '${_m.offerKg(o)} kg · ${s.pickupIn(o.pickupInDays)}',
+            trailing: Column(crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
+              Text('${money(o.pricePerKg)}/kg', style: t.bodyMedium?.copyWith(fontWeight: FontWeight.w700)),
+              const SizedBox(height: 4),
+              FairnessTag(pct: _m.vsMarket(o)),
+            ]),
+            onTap: () => _view(o),
           ),
       ]),
     ];
   }
+
+  /// Sales so far and the selling tips, one tap away so the page stays short.
+  void _showSales() => showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        builder: (context) {
+          final s = context.s;
+          final t = Theme.of(context).textTheme;
+          final c = Theme.of(context).colorScheme;
+          return DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: 0.6,
+            maxChildSize: 0.9,
+            builder: (context, scroll) => ListView(
+              controller: scroll,
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 0, 4, 16),
+                  child: Row(children: [
+                    Expanded(child: Text(s.salesTitle, style: t.headlineSmall)),
+                    Text(money(_m.seasonTotal), style: t.titleMedium),
+                  ]),
+                ),
+                GroupCard(children: [
+                  for (final sale in _m.sales)
+                    RowTile(
+                      icon: sale.paid ? Icons.check_circle_outline_rounded : Icons.local_shipping_outlined,
+                      iconColor: sale.paid ? c.primary : c.secondary,
+                      title: sale.buyer,
+                      subtitle: '${_m.saleKg(sale)} kg · ${money(sale.pricePerKg)}/kg · '
+                          '${sale.paid ? s.statusPaid : s.pickupIn(sale.pickupInDays!)}',
+                      trailing: Text(money(_m.saleTotal(sale)), style: t.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+                    ),
+                ]),
+                const SizedBox(height: 24),
+                SectionLabel(s.tipsTitle),
+                GroupCard(children: [
+                  for (final (i, tip) in s.sellTips.indexed)
+                    RowTile(
+                      icon: const [Icons.compare_arrows_rounded, Icons.scale_outlined, Icons.receipt_long_outlined][i % 3],
+                      title: tip,
+                    ),
+                ]),
+                const SizedBox(height: 12),
+                Text(s.marketRef(money(_m.referencePrice)), style: t.bodySmall, textAlign: TextAlign.center),
+              ],
+            ),
+          );
+        },
+      );
 }
 
 /// "+9% vs market" in green, "−9% vs market" in amber.
@@ -342,7 +378,7 @@ class _OfferAlert extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(s.wantsKg(offer.buyer, offer.kg), style: t.titleMedium?.copyWith(color: ink)),
+                Text(s.wantsKg(offer.buyer, market.offerKg(offer)), style: t.titleMedium?.copyWith(color: ink)),
                 const SizedBox(height: 4),
                 Wrap(spacing: 8, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
                   Text('${money(offer.pricePerKg)}/kg', style: t.bodyMedium?.copyWith(color: ink, fontWeight: FontWeight.w700)),
@@ -422,7 +458,7 @@ class _OfferSheet extends StatelessWidget {
           const SizedBox(height: 16),
           const Divider(),
           const SizedBox(height: 6),
-          line(s.quantity, '${offer.kg} kg'),
+          line(s.quantity, '${market.offerKg(offer)} kg'),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 7),
             child: Row(children: [
@@ -435,7 +471,7 @@ class _OfferSheet extends StatelessWidget {
           line(s.pickupIn(offer.pickupInDays), s.kmAway(offer.km)),
           const SizedBox(height: 6),
           const Divider(),
-          line(s.youReceive, money(offer.total), strong: true),
+          line(s.youReceive, money(market.offerTotal(offer)), strong: true),
           const SizedBox(height: 4),
           Row(children: [
             Icon(Icons.phone_iphone_rounded, size: 16, color: c.onSurfaceVariant),

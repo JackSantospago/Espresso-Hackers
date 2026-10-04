@@ -222,7 +222,7 @@ void main() {
 
         await tester.pumpWidget(_wrap(settings, SellScreen(market: MarketDemo())));
         await tester.pump(const Duration(seconds: 1)); // the new-offer card slides in
-        expect(find.text(settings.strings.sellTitle), findsOneWidget);
+        expect(find.text(settings.strings.tabSell), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
 
@@ -237,7 +237,7 @@ void main() {
         await tester.pumpWidget(_wrap(settings, SellScreen(market: market)));
         await tester.pump(const Duration(milliseconds: 600)); // the card waits half a second, then slides in
         await tester.pumpAndSettle();
-        expect(find.text(s.wantsKg(first.buyer, first.kg)), findsOneWidget);
+        expect(find.text(s.wantsKg(first.buyer, market.offerKg(first))), findsOneWidget);
 
         await tester.tap(find.text(s.view));
         await tester.pumpAndSettle();
@@ -287,7 +287,7 @@ void main() {
           ..setForecast(forecastHarvest(const HarvestInputs(trees: 400, floweredMonth: 3, floweredYear: 2026)));
         await tester.pumpWidget(_wrap(settings, SellScreen(market: market)));
         await tester.pumpAndSettle();
-        expect(find.text('800–1,200 kg'), findsOneWidget);
+        expect(find.textContaining('800–1,200 kg'), findsOneWidget);
         expect(find.text(s.toSellKg), findsOneWidget);
         expect((market.soldKg, market.offeredKg, market.toSellKg), (300, 350, 350));
         expect(tester.takeException(), isNull);
@@ -297,6 +297,12 @@ void main() {
         await tester.pumpAndSettle();
         expect((market.soldKg, market.offeredKg, market.toSellKg), (450, 200, 350));
         expect(find.text('450 kg'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+
+        // Sales history and tips open from one row.
+        await tester.tap(find.text(s.salesTitle));
+        await tester.pumpAndSettle();
+        expect(find.text(s.tipsTitle), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
 

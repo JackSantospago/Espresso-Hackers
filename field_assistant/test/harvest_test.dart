@@ -1,4 +1,5 @@
 import 'package:field_assistant/core/harvest.dart';
+import 'package:field_assistant/frontend/sell/market_demo.dart';
 import 'package:field_assistant/preview/fake_data.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -40,5 +41,15 @@ void main() {
     expect(isHarvestQuestion('Mavuno yangu yatakuwa lini?'), isTrue);
     expect(isHarvestQuestion('Combien de café vais-je récolter ? Ma récolte'), isTrue);
     expect(isHarvestQuestion('How do I manage leaf rust?'), isFalse);
+  });
+
+  test('demo offers and sales always fit inside the harvest, whatever the trees', () {
+    for (final trees in [20, 75, 150, 400, 1200, 5000]) {
+      final m = MarketDemo()..setForecast(forecastHarvest(HarvestInputs(trees: trees, floweredMonth: 3, floweredYear: 2026)));
+      expect(m.soldKg + m.offeredKg, lessThanOrEqualTo(m.seasonBase), reason: '$trees trees');
+      expect(m.toSellKg, greaterThan(0), reason: '$trees trees');
+      m.accept(m.offers.first);
+      expect(m.soldKg + m.offeredKg, lessThanOrEqualTo(m.seasonBase), reason: '$trees trees after accepting');
+    }
   });
 }

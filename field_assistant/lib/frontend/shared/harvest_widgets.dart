@@ -212,3 +212,77 @@ class EstimateTag extends StatelessWidget {
     );
   }
 }
+
+/// The harvest as a ring (like Apple's activity rings): sold (deep green),
+/// open offers (light green), still to sell (grey track). [center] sits inside.
+/// Animates when an offer is accepted or declined.
+class HarvestRing extends StatelessWidget {
+  const HarvestRing({
+    super.key,
+    required this.total,
+    required this.sold,
+    required this.offered,
+    required this.center,
+    this.size = 150,
+  });
+  final int total, sold, offered;
+  final Widget center;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
+    final whole = total <= 0 ? 1 : total;
+    final soldF = (sold / whole).clamp(0.0, 1.0);
+    final offeredF = (offered / whole).clamp(0.0, 1.0 - soldF);
+    return TweenAnimationBuilder<Offset>(
+      tween: Tween(end: Offset(soldF, offeredF)),
+      duration: const Duration(milliseconds: 700),
+      curve: Curves.easeOutCubic,
+      builder: (context, v, child) => CustomPaint(
+        size: Size.square(size),
+        painter: _RingPainter(
+          sold: v.dx,
+          offered: v.dy,
+          soldColor: c.primary,
+          offeredColor: c.primary.withValues(alpha: 0.32),
+          trackColor: c.surfaceContainerHighest,
+        ),
+        child: child,
+      ),
+      child: SizedBox.square(dimension: size, child: Center(child: center)),
+    );
+  }
+}
+
+class _RingPainter extends CustomPainter {
+  _RingPainter({
+    required this.sold,
+    required this.offered,
+    required this.soldColor,
+    required this.offeredColor,
+    required this.trackColor,
+  });
+  final double sold, offered;
+  final Color soldColor, offeredColor, trackColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const stroke = 16.0;
+    final rect = Offset.zero & size;
+    final arc = rect.deflate(stroke / 2);
+    Paint p(Color color) => Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.butt;
+    const start = -1.5707963267948966; // 12 o'clock
+    const full = 6.283185307179586;
+    canvas.drawArc(arc, 0, full, false, p(trackColor));
+    canvas.drawArc(arc, start + sold * full, offered * full, false, p(offeredColor));
+    canvas.drawArc(arc, start, sold * full, false, p(soldColor));
+  }
+
+  @override
+  bool shouldRepaint(_RingPainter old) => old.sold != sold || old.offered != offered;
+}

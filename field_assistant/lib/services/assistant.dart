@@ -284,7 +284,8 @@ QUESTION: $question''';
     _awaitingHarvestFacts = false;
     status = s.statusCalculating;
     _notify();
-    final facts = [...(await Brain.memories()).map((m) => m.text), question];
+    final remembered = (await Brain.memories()).map((m) => m.text).toList();
+    final facts = [...remembered, question];
     final today = DateTime.now();
 
     // 1. The model extracts the inputs.
@@ -328,10 +329,13 @@ ${facts.map((f) => '- $f').join('\n')}''');
         n(f.kgLow), n(f.kgHigh), s.monthsLong[f.readyFrom.month - 1], s.monthsLong[f.readyTo.month - 1]);
     _notify();
 
-    // 4. Remember what the farmer told us (trees, flowering) for next time.
-    status = s.statusUpdatingMemory;
-    _notify();
-    await _updateMemory(question);
+    // 4. Remember what the farmer just told us (trees, flowering), but only if
+    // it is new: then the answer is ready at once ("See in Sell" not greyed out).
+    if (harvestInputsFrom(remembered, today: today) == null) {
+      status = s.statusUpdatingMemory;
+      _notify();
+      await _updateMemory(question);
+    }
     return true;
   }
 

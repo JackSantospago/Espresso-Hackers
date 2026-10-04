@@ -7,12 +7,16 @@ import '../../core/harvest.dart';
 /// make offers, the farmer sees how each compares with a market reference, and
 /// accepted offers become sale records. Buyer names are fictional. The page
 /// shows a "Demo" tag so nobody mistakes this for live data.
+///
+/// Quantities are shares of the season's harvest (the chat's forecast, or
+/// 1,000 kg before there is one), so sold + offered never exceeds what grows,
+/// whatever the farmer's trees: about 30% sold, 35% on offer, 35% still to sell.
 
 class BuyerOffer {
   const BuyerOffer({
     required this.id,
     required this.buyer,
-    required this.kg,
+    required this.share,
     required this.pricePerKg,
     required this.pickupInDays,
     required this.km,
@@ -22,24 +26,25 @@ class BuyerOffer {
     this.expiresInHours,
   });
   final String id, buyer;
-  final int kg, pricePerKg, pickupInDays, km, sales;
+
+  /// Part of the season's harvest this buyer asks for (0.15 = 15%).
+  final double share;
+  final int pricePerKg, pickupInDays, km, sales;
   final double rating;
   final bool verified;
   final int? expiresInHours;
-
-  int get total => kg * pricePerKg;
 }
 
 class SaleRecord {
-  const SaleRecord({required this.buyer, required this.kg, required this.pricePerKg, this.pickupInDays});
+  const SaleRecord({required this.buyer, required this.share, required this.pricePerKg, this.pickupInDays});
   final String buyer;
-  final int kg, pricePerKg;
+  final double share;
+  final int pricePerKg;
 
   /// Null: picked up and paid. Otherwise the pickup is scheduled.
   final int? pickupInDays;
 
   bool get paid => pickupInDays == null;
-  int get total => kg * pricePerKg;
 }
 
 /// The demo marketplace. One instance for the whole app so accepted offers stay
@@ -56,7 +61,7 @@ class MarketDemo extends ChangeNotifier {
     const BuyerOffer(
       id: 'o1',
       buyer: 'Highland Roasters',
-      kg: 150,
+      share: 0.15,
       pricePerKg: 104,
       pickupInDays: 3,
       km: 12,
@@ -68,7 +73,7 @@ class MarketDemo extends ChangeNotifier {
     const BuyerOffer(
       id: 'o2',
       buyer: 'Kahawa Bora Co-op',
-      kg: 120,
+      share: 0.12,
       pricePerKg: 98,
       pickupInDays: 5,
       km: 6,
@@ -79,7 +84,7 @@ class MarketDemo extends ChangeNotifier {
     const BuyerOffer(
       id: 'o3',
       buyer: 'Mama Grace Traders',
-      kg: 80,
+      share: 0.08,
       pricePerKg: 86,
       pickupInDays: 2,
       km: 21,
@@ -89,8 +94,8 @@ class MarketDemo extends ChangeNotifier {
   ];
 
   final List<SaleRecord> sales = [
-    const SaleRecord(buyer: 'Kahawa Bora Co-op', kg: 180, pricePerKg: 92),
-    const SaleRecord(buyer: 'Highland Roasters', kg: 120, pricePerKg: 99),
+    const SaleRecord(buyer: 'Kahawa Bora Co-op', share: 0.18, pricePerKg: 92),
+    const SaleRecord(buyer: 'Highland Roasters', share: 0.12, pricePerKg: 99),
   ];
 
   /// The slide-in "new offer" card is shown once per app run.
@@ -111,25 +116,38 @@ class MarketDemo extends ChangeNotifier {
 
   void forecastSeen() => forecastNew = false;
 
+  /// The harvest every share is taken from.
+  int get seasonBase => forecast?.kgMid ?? 1000;
+
+  /// A share of the season in kg: rounded to 10 kg on bigger farms, to 1 kg on
+  /// small ones (so a 50 kg harvest still leaves something to sell).
+  int kg(double share) {
+    final step = seasonBase >= 500 ? 10 : 1;
+    final v = (seasonBase * share / step).round() * step;
+    return v < step ? step : v;
+  }
+
+  int offerKg(BuyerOffer o) => kg(o.share);
+  int offerTotal(BuyerOffer o) => offerKg(o) * o.pricePerKg;
+  int saleKg(SaleRecord r) => kg(r.share);
+  int saleTotal(SaleRecord r) => saleKg(r) * r.pricePerKg;
+
   /// Sold or agreed (pickup scheduled), open offers, and what is left to sell.
-  int get soldKg => sales.fold(0, (a, s) => a + s.kg);
-  int get offeredKg => offers.fold(0, (a, o) => a + o.kg);
+  int get soldKg => sales.fold(0, (a, s) => a + saleKg(s));
+  int get offeredKg => offers.fold(0, (a, o) => a + offerKg(o));
   int get toSellKg {
-    final f = forecast;
-    if (f == null) return 0;
-    final left = f.kgMid - soldKg - offeredKg;
+    final left = seasonBase - soldKg - offeredKg;
     return left < 0 ? 0 : left;
   }
 
-  int get seasonKg => sales.fold(0, (a, s) => a + s.kg);
-  int get seasonTotal => sales.fold(0, (a, s) => a + s.total);
+  int get seasonTotal => sales.fold(0, (a, s) => a + saleTotal(s));
 
   /// How an offer compares with the market reference, in percent.
   int vsMarket(BuyerOffer o) => ((o.pricePerKg - referencePrice) * 100 / referencePrice).round();
 
   void accept(BuyerOffer o) {
     offers.remove(o);
-    sales.insert(0, SaleRecord(buyer: o.buyer, kg: o.kg, pricePerKg: o.pricePerKg, pickupInDays: o.pickupInDays));
+    sales.insert(0, SaleRecord(buyer: o.buyer, share: o.share, pricePerKg: o.pricePerKg, pickupInDays: o.pickupInDays));
     notifyListeners();
   }
 
