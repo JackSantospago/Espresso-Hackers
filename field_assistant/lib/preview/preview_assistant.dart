@@ -138,6 +138,15 @@ class PreviewAssistant extends Assistant {
         ..caution = strings.photoCaution
         ..sources = const ['coffee_leaf_rust.md']
         ..match = 0.51;
+      // Same rule as the real app: a very confident result is noted in My farm.
+      if (photoWorthRemembering(d)) {
+        final prefix = photoMemoryPrefix(d);
+        data.memoryItems
+          ..removeWhere((m) => m.id.startsWith(prefix))
+          ..insert(0, MemoryItem('$prefix${DateTime.now().microsecondsSinceEpoch}',
+              photoMemoryText(strings, d, DateTime.now()), DateTime.now()));
+        await refreshMemoryCount();
+      }
     } else {
       reply
         ..text = strings.photoNotSure(strings.photoNotSureGuess(d.best.label.display, d.best.percent))

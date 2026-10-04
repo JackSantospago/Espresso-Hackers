@@ -125,6 +125,8 @@ class S {
     required this.photoNotSure,
     required this.photoCaution,
     required this.photoAskDefault,
+    required this.photoMemoryHealthy,
+    required this.photoMemoryProblem,
     required this.diagLikely,
     required this.diagHealthy,
     required this.diagNotSure,
@@ -301,6 +303,10 @@ class S {
   final String Function(String guess) photoNotSure;
   final String photoCaution;
   final String Function(String crop) photoAskDefault;
+
+  /// Written to My farm after a confident photo check (a machine guess, so worded as one).
+  final String Function(String date, String crop, String percent) photoMemoryHealthy;
+  final String Function(String date, String crop, String condition, String percent) photoMemoryProblem;
 
   // Diagnosis card
   final String diagLikely, diagHealthy, diagNotSure;
@@ -565,6 +571,9 @@ final S _en = S(
   photoCaution: 'This is a machine guess from one photo. Check other leaves, and confirm with your '
       'extension officer before buying or spraying anything.',
   photoAskDefault: (crop) => 'What is wrong with my $crop leaf and what can I do?',
+  photoMemoryHealthy: (date, crop, pct) => 'Photo check $date: a $crop leaf looked healthy ($pct sure).',
+  photoMemoryProblem: (date, crop, cond, pct) =>
+      'Photo check $date: a $crop leaf looked like $cond ($pct sure, not confirmed).',
   diagLikely: 'Possible problem',
   diagHealthy: 'Looks healthy',
   diagNotSure: 'Not sure',
@@ -873,6 +882,9 @@ final S _sw = S(
   photoCaution: 'Haya ni makisio ya mashine kutoka picha moja. Kagua majani mengine, na thibitisha na '
       'afisa ugani kabla ya kununua au kunyunyizia chochote.',
   photoAskDefault: (crop) => 'Jani langu la $crop lina shida gani na nifanye nini?',
+  photoMemoryHealthy: (date, crop, pct) => 'Ukaguzi wa picha $date: jani la $crop lilionekana zima (uhakika $pct).',
+  photoMemoryProblem: (date, crop, cond, pct) =>
+      'Ukaguzi wa picha $date: jani la $crop lilionekana kuwa na $cond (uhakika $pct, haijathibitishwa).',
   diagLikely: 'Tatizo linalowezekana',
   diagHealthy: 'Linaonekana zima',
   diagNotSure: 'Sina uhakika',
@@ -1184,6 +1196,9 @@ final S _fr = S(
   photoCaution: "Ceci est une estimation de la machine à partir d'une seule photo. Vérifiez d'autres "
       "feuilles et confirmez avec votre conseiller agricole avant d'acheter ou de pulvériser quoi que ce soit.",
   photoAskDefault: (crop) => "Qu'est-ce qui ne va pas avec ma feuille de $crop et que puis-je faire ?",
+  photoMemoryHealthy: (date, crop, pct) => 'Vérification photo du $date : une feuille de $crop semblait saine (sûr à $pct).',
+  photoMemoryProblem: (date, crop, cond, pct) =>
+      'Vérification photo du $date : une feuille de $crop semblait atteinte de $cond (sûr à $pct, non confirmé).',
   diagLikely: 'Problème possible',
   diagHealthy: 'Semble saine',
   diagNotSure: 'Pas sûr',

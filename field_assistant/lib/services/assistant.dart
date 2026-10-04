@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_edge_ai/flutter_edge_ai.dart';
@@ -54,6 +55,7 @@ enum AssistantState { loading, ready, failed }
 /// the answer → fail-safe flags → extract durable facts the farmer stated.
 /// Flow per photo: on-device classifier → (not confident | healthy | disease)
 /// → only a confident disease reaches the LLM, grounded on the knowledge base.
+/// A very confident result (≥ [kPhotoMemoryThreshold]) is also noted in My farm.
 /// Flow per weather check: the rules find the warnings → no warnings: fixed
 /// answer, no LLM → warnings: the LLM explains what to do, grounded on the
 /// knowledge base and on what the farmer said about the crops (memory).
@@ -379,7 +381,7 @@ ${facts.map((f) => '- $f').join('\n')}''');
       if (label.isHealthy) {
         reply
           ..text = s.healthy(label.crop.toLowerCase(), d.best.percent)
-          ..details = photoNote;
+          ..details = photoNote + await _rememberPhoto(d);
         return;
       }
 
@@ -422,9 +424,10 @@ QUESTION: $asked''';
         ..caution = s.photoCaution
         ..sources = _sources(hits)
         ..match = hits.isEmpty ? 0.0 : hits.first.score
-        ..details = photoNote;
+        ..details = photoNote + await _rememberPhoto(d);
 
-      // Only what the farmer typed goes to memory — never the classifier's guess.
+      // What the farmer typed is mined for facts; the photo result itself was
+      // saved above only as a dated, labelled guess (never as a fact).
       if (question.isNotEmpty) {
         status = s.statusUpdatingMemory;
         _notify();
@@ -573,6 +576,25 @@ ${_context(hits)}''';
 
   // ------------------------------------------------------------------ memory
 
+  /// Notes a very confident photo check in My farm, so later answers know about
+  /// it. One line per crop: a newer photo check of that crop replaces the older
+  /// one, and it never replaces anything the farmer said. Returns a note for
+  /// the "Details" line; a failure here never breaks the photo answer.
+  Future<String> _rememberPhoto(Diagnosis d) async {
+    if (!photoWorthRemembering(d)) return '';
+    try {
+      final prefix = photoMemoryPrefix(d);
+      for (final m in await Brain.memories()) {
+        if (m.id.startsWith(prefix)) await Brain.forget(m.id);
+      }
+      await Brain.remember(photoMemoryText(strings, d, DateTime.now()), merge: false, idPrefix: prefix);
+      await refreshMemoryCount();
+      return ' · saved to My farm';
+    } catch (e) {
+      return ' · not saved to My farm: $e';
+    }
+  }
+
   Future<void> _updateMemory(String farmerSaid) async {
     if (farmerSaid.length < 15) return;
     final out = await _generate('''
@@ -609,4 +631,23 @@ Farmer said: "$farmerSaid"''');
     _model?.close().catchError((Object _) {});
     super.dispose();
   }
+}
+
+// ------------------------------------------------- photo check → My farm
+
+/// Only a confident crop diagnosis that also clears the stricter memory bar.
+bool photoWorthRemembering(Diagnosis d) =>
+    d.confident && d.best.probability >= math.max(kPhotoMemoryThreshold, d.threshold);
+
+/// Id prefix of the photo-check entry for this crop (one per crop).
+String photoMemoryPrefix(Diagnosis d) => 'mem:photo:${d.best.label.crop.toLowerCase()}:';
+
+/// The My farm line for a photo check, dated and worded as a guess.
+String photoMemoryText(S s, Diagnosis d, DateTime when) {
+  final date = when.toIso8601String().substring(0, 10);
+  final label = d.best.label;
+  final crop = label.crop.toLowerCase();
+  return label.isHealthy
+      ? s.photoMemoryHealthy(date, crop, d.best.percent)
+      : s.photoMemoryProblem(date, crop, label.condition, d.best.percent);
 }
