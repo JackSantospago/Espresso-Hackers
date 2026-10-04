@@ -7,6 +7,7 @@ import '../shared/farm_data.dart';
 import '../chatbot/chat_screen.dart';
 import '../grow/grow_screen.dart';
 import '../help/help_screen.dart';
+import '../sell/market_demo.dart';
 import '../sell/sell_screen.dart';
 
 /// Bottom navigation, always visible: Ask · Grow · Sell · Help.
@@ -74,7 +75,7 @@ class _HomeShellState extends State<HomeShell> {
       // The chat stays mounted (offstage) so its text field and scroll survive tab switches.
       body: IndexedStack(index: _tab == 0 ? 0 : 1, children: [ChatScreen(assistant: a), other]),
       bottomNavigationBar: ListenableBuilder(
-        listenable: Listenable.merge([a, weather]),
+        listenable: Listenable.merge([a, weather, MarketDemo.instance]),
         builder: (context, _) => DecoratedBox(
           decoration: BoxDecoration(border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant))),
           child: NavigationBar(
@@ -100,7 +101,12 @@ class _HomeShellState extends State<HomeShell> {
               label: s.tabGrow,
             ),
             NavigationDestination(
-              icon: const Icon(Icons.storefront_outlined),
+              // Open offers from buyers (demo marketplace).
+              icon: Badge(
+                isLabelVisible: MarketDemo.instance.offers.isNotEmpty,
+                label: Text('${MarketDemo.instance.offers.length}'),
+                child: const Icon(Icons.storefront_outlined),
+              ),
               selectedIcon: const Icon(Icons.storefront),
               label: s.tabSell,
             ),

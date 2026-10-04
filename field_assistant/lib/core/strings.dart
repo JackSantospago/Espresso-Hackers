@@ -40,6 +40,33 @@ class S {
     required this.sellIntro,
     required this.sellComing,
     required this.comingSoon,
+    required this.demoTag,
+    required this.newOffer,
+    required this.wantsKg,
+    required this.vsMarket,
+    required this.pickupIn,
+    required this.kmAway,
+    required this.expiresIn,
+    required this.view,
+    required this.decline,
+    required this.acceptOffer,
+    required this.saleAgreed,
+    required this.offersTitle,
+    required this.noOffers,
+    required this.marketRef,
+    required this.quantity,
+    required this.pricePerKg,
+    required this.youReceive,
+    required this.payment,
+    required this.paymentOnPickup,
+    required this.noFees,
+    required this.verifiedBuyer,
+    required this.ratingSales,
+    required this.salesTitle,
+    required this.seasonSummary,
+    required this.statusPaid,
+    required this.tipsTitle,
+    required this.sellTips,
     required this.sellTitle,
     required this.sellSubtitle,
     required this.promiseTitles,
@@ -178,6 +205,35 @@ class S {
   final String sellIntro;
   final List<String> sellComing;
   final String comingSoon, sellTitle, sellSubtitle;
+
+  // Sell: marketplace demo (offers from buyers, fairness vs a market reference, records)
+  final String demoTag;
+  final String newOffer;
+  final String Function(String buyer, int kg) wantsKg;
+  final String Function(int pct) vsMarket;
+  final String Function(int days) pickupIn;
+  final String Function(int km) kmAway;
+  final String Function(int hours) expiresIn;
+  final String view;
+  final String decline;
+  final String acceptOffer;
+  final String Function(String buyer) saleAgreed;
+  final String offersTitle;
+  final String noOffers;
+  final String Function(String price) marketRef;
+  final String quantity;
+  final String pricePerKg;
+  final String youReceive;
+  final String payment;
+  final String paymentOnPickup;
+  final String noFees;
+  final String verifiedBuyer;
+  final String Function(String rating, int sales) ratingSales;
+  final String salesTitle;
+  final String Function(int kg, String total) seasonSummary;
+  final String statusPaid;
+  final String tipsTitle;
+  final List<String> sellTips;
 
   // Help (short versions for the main view; the long lists sit under "More details")
   final List<String> promiseTitles, promiseTexts, howShort;
@@ -347,6 +403,37 @@ final S _en = S(
   tabGrow: 'Grow',
   tabSell: 'Sell',
   comingSoon: 'Coming soon',
+  demoTag: 'Demo',
+  newOffer: 'New offer',
+  wantsKg: (buyer, kg) => '$buyer wants $kg kg',
+  vsMarket: (pct) => pct >= 0 ? '+$pct% vs market' : '−${-pct}% vs market',
+  pickupIn: (days) => days == 1 ? 'Pickup tomorrow' : 'Pickup in $days days',
+  kmAway: (km) => '$km km away',
+  expiresIn: (hours) => 'Expires in $hours h',
+  view: 'View',
+  decline: 'Decline',
+  acceptOffer: 'Accept offer',
+  saleAgreed: (buyer) => 'Sale agreed with $buyer.',
+  offersTitle: 'Offers for your harvest',
+  noOffers: 'No new offers right now.',
+  marketRef: (price) => 'Market reference this week: $price/kg',
+  quantity: 'Quantity',
+  pricePerKg: 'Price per kg',
+  youReceive: 'You receive',
+  payment: 'Payment',
+  paymentOnPickup: 'M-Pesa when the batch is picked up',
+  noFees: 'No middleman fees',
+  verifiedBuyer: 'Verified buyer',
+  ratingSales: (rating, sales) => '★ $rating · $sales sales',
+  salesTitle: 'Your sales',
+  seasonSummary: (kg, total) => 'This season: $kg kg · $total',
+  statusPaid: 'Paid',
+  tipsTitle: 'Selling tips',
+  sellTips: [
+    'Compare offers with the market reference before you agree.',
+    'Weigh your batch yourself before pickup.',
+    'Keep every receipt: your records show how each season went.',
+  ],
   sellTitle: 'Sell your harvest',
   sellSubtitle: 'Everything to get your harvest to market.',
   promiseTitles: [
@@ -604,6 +691,37 @@ final S _sw = S(
   tabGrow: 'Kilimo',
   tabSell: 'Uza',
   comingSoon: 'Inakuja hivi karibuni',
+  demoTag: 'Onyesho',
+  newOffer: 'Ofa mpya',
+  wantsKg: (buyer, kg) => '$buyer anataka kilo $kg',
+  vsMarket: (pct) => pct >= 0 ? '+$pct% juu ya soko' : '−${-pct}% chini ya soko',
+  pickupIn: (days) => days == 1 ? 'Kuchukuliwa kesho' : 'Kuchukuliwa baada ya siku $days',
+  kmAway: (km) => 'km $km',
+  expiresIn: (hours) => 'Inaisha baada ya saa $hours',
+  view: 'Angalia',
+  decline: 'Kataa',
+  acceptOffer: 'Kubali ofa',
+  saleAgreed: (buyer) => 'Mauzo yamekubaliwa na $buyer.',
+  offersTitle: 'Ofa za mavuno yako',
+  noOffers: 'Hakuna ofa mpya kwa sasa.',
+  marketRef: (price) => 'Bei ya marejeo ya soko wiki hii: $price/kg',
+  quantity: 'Kiasi',
+  pricePerKg: 'Bei kwa kilo',
+  youReceive: 'Utapokea',
+  payment: 'Malipo',
+  paymentOnPickup: 'M-Pesa mzigo unapochukuliwa',
+  noFees: 'Hakuna ada ya madalali',
+  verifiedBuyer: 'Mnunuzi aliyethibitishwa',
+  ratingSales: (rating, sales) => '★ $rating · mauzo $sales',
+  salesTitle: 'Mauzo yako',
+  seasonSummary: (kg, total) => 'Msimu huu: kilo $kg · $total',
+  statusPaid: 'Imelipwa',
+  tipsTitle: 'Vidokezo vya kuuza',
+  sellTips: [
+    'Linganisha ofa na bei ya marejeo ya soko kabla ya kukubali.',
+    'Pima mzigo wako mwenyewe kabla haujachukuliwa.',
+    'Weka kila risiti: kumbukumbu zako zinaonyesha jinsi kila msimu ulivyokwenda.',
+  ],
   sellTitle: 'Uza mavuno yako',
   sellSubtitle: 'Kila kitu cha kufikisha mavuno yako sokoni.',
   promiseTitles: [
@@ -864,6 +982,37 @@ final S _fr = S(
   tabGrow: 'Cultiver',
   tabSell: 'Vendre',
   comingSoon: 'Bientôt disponible',
+  demoTag: 'Démo',
+  newOffer: 'Nouvelle offre',
+  wantsKg: (buyer, kg) => '$buyer veut $kg kg',
+  vsMarket: (pct) => pct >= 0 ? '+$pct % vs marché' : '−${-pct} % vs marché',
+  pickupIn: (days) => days == 1 ? 'Enlèvement demain' : 'Enlèvement dans $days jours',
+  kmAway: (km) => 'à $km km',
+  expiresIn: (hours) => 'Expire dans $hours h',
+  view: 'Voir',
+  decline: 'Refuser',
+  acceptOffer: "Accepter l'offre",
+  saleAgreed: (buyer) => 'Vente conclue avec $buyer.',
+  offersTitle: 'Offres pour votre récolte',
+  noOffers: 'Aucune nouvelle offre pour le moment.',
+  marketRef: (price) => 'Prix de référence du marché cette semaine : $price/kg',
+  quantity: 'Quantité',
+  pricePerKg: 'Prix au kg',
+  youReceive: 'Vous recevez',
+  payment: 'Paiement',
+  paymentOnPickup: "M-Pesa à l'enlèvement du lot",
+  noFees: "Pas de frais d'intermédiaire",
+  verifiedBuyer: 'Acheteur vérifié',
+  ratingSales: (rating, sales) => '★ $rating · $sales ventes',
+  salesTitle: 'Vos ventes',
+  seasonSummary: (kg, total) => 'Cette saison : $kg kg · $total',
+  statusPaid: 'Payé',
+  tipsTitle: 'Conseils de vente',
+  sellTips: [
+    "Comparez les offres au prix de référence du marché avant d'accepter.",
+    "Pesez votre lot vous-même avant l'enlèvement.",
+    "Gardez chaque reçu : vos registres montrent comment s'est passée chaque saison.",
+  ],
   sellTitle: 'Vendez votre récolte',
   sellSubtitle: 'Tout pour amener votre récolte au marché.',
   promiseTitles: [

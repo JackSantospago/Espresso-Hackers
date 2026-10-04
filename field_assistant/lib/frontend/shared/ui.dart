@@ -117,7 +117,10 @@ class RowTile extends StatelessWidget {
             ]),
           ),
           // Values on the right may wrap, never push the row off screen.
-          if (trailing != null) ...[const SizedBox(width: 8), Flexible(child: trailing!)]
+          if (trailing != null) ...[
+            const SizedBox(width: 8),
+            ConstrainedBox(constraints: const BoxConstraints(maxWidth: 150), child: trailing!),
+          ]
           else if (onTap != null) Icon(Icons.chevron_right_rounded, color: c.outline),
         ]),
       ),

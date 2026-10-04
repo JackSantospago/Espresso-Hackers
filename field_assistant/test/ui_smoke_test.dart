@@ -16,6 +16,7 @@ import 'package:field_assistant/preview/preview_weather.dart';
 import 'package:field_assistant/services/assistant.dart';
 import 'package:field_assistant/frontend/chatbot/chat_screen.dart';
 import 'package:field_assistant/frontend/help/help_screen.dart';
+import 'package:field_assistant/frontend/sell/market_demo.dart';
 import 'package:field_assistant/frontend/sell/sell_screen.dart';
 import 'package:field_assistant/frontend/shared/theme.dart';
 import 'package:flutter/material.dart';
@@ -218,9 +219,36 @@ void main() {
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.reset);
 
-        await tester.pumpWidget(_wrap(settings, const SellScreen()));
-        await tester.pump();
+        await tester.pumpWidget(_wrap(settings, SellScreen(market: MarketDemo())));
+        await tester.pump(const Duration(seconds: 1)); // the new-offer card slides in
         expect(find.text(settings.strings.sellTitle), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('sell: the new offer slides in and can be accepted', (tester) async {
+        tester.view.physicalSize = const Size(360, 720);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        final s = settings.strings;
+        final market = MarketDemo();
+        final first = market.offers.first;
+        await tester.pumpWidget(_wrap(settings, SellScreen(market: market)));
+        await tester.pump(const Duration(milliseconds: 600)); // the card waits half a second, then slides in
+        await tester.pumpAndSettle();
+        expect(find.text(s.wantsKg(first.buyer, first.kg)), findsOneWidget);
+
+        await tester.tap(find.text(s.view));
+        await tester.pumpAndSettle();
+        expect(find.text(s.youReceive), findsOneWidget);
+        expect(tester.takeException(), isNull);
+
+        await tester.tap(find.text(s.acceptOffer));
+        await tester.pumpAndSettle();
+        expect(market.offers.contains(first), isFalse);
+        expect(market.sales.first.buyer, first.buyer);
+        expect(market.sales.first.paid, isFalse); // pickup scheduled
+        expect(find.text(s.saleAgreed(first.buyer)), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
 
