@@ -53,16 +53,16 @@ class MarketDemo extends ChangeNotifier {
   MarketDemo();
   static final instance = MarketDemo();
 
-  /// Coffee cherry, KES per kg (demo value).
-  final int referencePrice = 95;
-  static const currency = 'KES';
+  /// Coffee cherry, US cents per kg (demo value). Shown in US dollars so anyone
+  /// watching the demo reads it at once; a real market would use the local currency.
+  final int referencePrice = 73;
 
   final List<BuyerOffer> offers = [
     const BuyerOffer(
       id: 'o1',
       buyer: 'Highland Roasters',
       share: 0.15,
-      pricePerKg: 104,
+      pricePerKg: 80,
       pickupInDays: 3,
       km: 12,
       rating: 4.8,
@@ -74,7 +74,7 @@ class MarketDemo extends ChangeNotifier {
       id: 'o2',
       buyer: 'Kahawa Bora Co-op',
       share: 0.12,
-      pricePerKg: 98,
+      pricePerKg: 76,
       pickupInDays: 5,
       km: 6,
       rating: 4.9,
@@ -85,7 +85,7 @@ class MarketDemo extends ChangeNotifier {
       id: 'o3',
       buyer: 'Mama Grace Traders',
       share: 0.08,
-      pricePerKg: 86,
+      pricePerKg: 66,
       pickupInDays: 2,
       km: 21,
       rating: 4.1,
@@ -94,8 +94,8 @@ class MarketDemo extends ChangeNotifier {
   ];
 
   final List<SaleRecord> sales = [
-    const SaleRecord(buyer: 'Kahawa Bora Co-op', share: 0.18, pricePerKg: 92),
-    const SaleRecord(buyer: 'Highland Roasters', share: 0.12, pricePerKg: 99),
+    const SaleRecord(buyer: 'Kahawa Bora Co-op', share: 0.18, pricePerKg: 71),
+    const SaleRecord(buyer: 'Highland Roasters', share: 0.12, pricePerKg: 76),
   ];
 
   /// The slide-in "new offer" card is shown once per app run.
@@ -157,9 +157,12 @@ class MarketDemo extends ChangeNotifier {
   }
 }
 
-/// "KES 20,800".
-String money(int amount) {
-  final digits = amount.abs().toString();
-  final grouped = digits.replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
-  return '${MarketDemo.currency} ${amount < 0 ? '-' : ''}$grouped';
+/// A price per kg from US cents: "$0.80".
+String price(int cents) => '\$${(cents / 100).toStringAsFixed(2)}';
+
+/// An amount from US cents, in whole dollars: "$1,234".
+String money(int cents) {
+  final dollars = (cents / 100).round();
+  final grouped = dollars.abs().toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
+  return '${dollars < 0 ? '-' : ''}\$$grouped';
 }

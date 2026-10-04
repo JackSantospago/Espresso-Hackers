@@ -287,7 +287,8 @@ void main() {
           ..setForecast(forecastHarvest(const HarvestInputs(trees: 400, floweredMonth: 3, floweredYear: 2026)));
         await tester.pumpWidget(_wrap(settings, SellScreen(market: market)));
         await tester.pumpAndSettle();
-        expect(find.textContaining('800–1,200 kg'), findsOneWidget);
+        expect(find.text('1,000 kg'), findsOneWidget); // the ring's centre
+        expect(find.text(s.thisSeason), findsOneWidget);
         expect(find.text(s.toSellKg), findsOneWidget);
         expect((market.soldKg, market.offeredKg, market.toSellKg), (300, 350, 350));
         expect(tester.takeException(), isNull);

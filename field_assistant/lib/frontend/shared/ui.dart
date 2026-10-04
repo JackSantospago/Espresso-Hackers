@@ -85,8 +85,12 @@ class RowTile extends StatelessWidget {
     this.onTap,
     this.titleStyle,
     this.iconColor,
+    this.leading,
   });
   final IconData? icon;
+
+  /// Instead of [icon], any widget (e.g. initials in a circle).
+  final Widget? leading;
   final String title;
   final String? subtitle;
   final Widget? trailing;
@@ -103,7 +107,10 @@ class RowTile extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
         child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-          if (icon != null) ...[
+          if (leading != null) ...[
+            leading!,
+            const SizedBox(width: 14),
+          ] else if (icon != null) ...[
             Icon(icon, size: 21, color: iconColor ?? c.onSurfaceVariant),
             const SizedBox(width: 15),
           ],

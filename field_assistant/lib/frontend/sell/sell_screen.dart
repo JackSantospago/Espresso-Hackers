@@ -180,8 +180,8 @@ class _SellScreenState extends State<SellScreen> {
                 sold: _m.soldKg,
                 offered: _m.offeredKg,
                 center: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Text(groupDigits(_m.seasonBase), style: t.headlineSmall),
-                  Text('kg', style: t.labelMedium?.copyWith(color: c.onSurfaceVariant)),
+                  Text('${groupDigits(_m.seasonBase)} kg', style: t.titleLarge),
+                  Text(s.thisSeason, style: t.labelSmall?.copyWith(color: c.onSurfaceVariant)),
                 ]),
               ),
               const SizedBox(width: 20),
@@ -194,11 +194,7 @@ class _SellScreenState extends State<SellScreen> {
               ),
             ]),
             const SizedBox(height: 14),
-            Text(
-              '${readyText(context, f)} · ${s.harvestEstimate} ${kgRange(f)}',
-              style: t.bodySmall,
-              textAlign: TextAlign.center,
-            ),
+            Text(readyText(context, f), style: t.bodyMedium?.copyWith(color: c.primary, fontWeight: FontWeight.w600)),
           ]),
         ),
       ),
@@ -232,13 +228,16 @@ class _SellScreenState extends State<SellScreen> {
         if (_m.offers.isEmpty) RowTile(icon: Icons.inbox_outlined, title: s.noOffers),
         for (final o in _m.offers)
           RowTile(
-            icon: o.verified ? Icons.verified_outlined : Icons.storefront_outlined,
-            iconColor: o.verified ? c.primary : null,
+            leading: CircleAvatar(
+              radius: 18,
+              backgroundColor: c.surfaceContainerHigh,
+              child: Text(_initials(o.buyer), style: t.labelLarge?.copyWith(color: c.onSurface)),
+            ),
             title: o.buyer,
             titleStyle: t.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
-            subtitle: '${_m.offerKg(o)} kg · ${s.pickupIn(o.pickupInDays)}',
+            subtitle: '${_m.offerKg(o)} kg',
             trailing: Column(crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
-              Text('${money(o.pricePerKg)}/kg', style: t.bodyMedium?.copyWith(fontWeight: FontWeight.w700)),
+              Text('${price(o.pricePerKg)}/kg', style: t.bodyMedium?.copyWith(fontWeight: FontWeight.w700)),
               const SizedBox(height: 4),
               FairnessTag(pct: _m.vsMarket(o)),
             ]),
@@ -277,7 +276,7 @@ class _SellScreenState extends State<SellScreen> {
                       icon: sale.paid ? Icons.check_circle_outline_rounded : Icons.local_shipping_outlined,
                       iconColor: sale.paid ? c.primary : c.secondary,
                       title: sale.buyer,
-                      subtitle: '${_m.saleKg(sale)} kg · ${money(sale.pricePerKg)}/kg · '
+                      subtitle: '${_m.saleKg(sale)} kg · ${price(sale.pricePerKg)}/kg · '
                           '${sale.paid ? s.statusPaid : s.pickupIn(sale.pickupInDays!)}',
                       trailing: Text(money(_m.saleTotal(sale)), style: t.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
                     ),
@@ -292,7 +291,7 @@ class _SellScreenState extends State<SellScreen> {
                     ),
                 ]),
                 const SizedBox(height: 12),
-                Text(s.marketRef(money(_m.referencePrice)), style: t.bodySmall, textAlign: TextAlign.center),
+                Text(s.marketRef(price(_m.referencePrice)), style: t.bodySmall, textAlign: TextAlign.center),
               ],
             ),
           );
@@ -361,12 +360,7 @@ class _OfferAlert extends StatelessWidget {
           Row(children: [
             Container(width: 8, height: 8, decoration: BoxDecoration(color: c.inversePrimary, shape: BoxShape.circle)),
             const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                [s.newOffer, if (offer.expiresInHours != null) s.expiresIn(offer.expiresInHours!)].join(' · '),
-                style: t.labelMedium?.copyWith(color: soft),
-              ),
-            ),
+            Expanded(child: Text(s.newOffer, style: t.labelMedium?.copyWith(color: soft))),
           ]),
           const SizedBox(height: 10),
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -381,11 +375,9 @@ class _OfferAlert extends StatelessWidget {
                 Text(s.wantsKg(offer.buyer, market.offerKg(offer)), style: t.titleMedium?.copyWith(color: ink)),
                 const SizedBox(height: 4),
                 Wrap(spacing: 8, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
-                  Text('${money(offer.pricePerKg)}/kg', style: t.bodyMedium?.copyWith(color: ink, fontWeight: FontWeight.w700)),
+                  Text('${price(offer.pricePerKg)}/kg', style: t.bodyMedium?.copyWith(color: ink, fontWeight: FontWeight.w700)),
                   FairnessTag(pct: market.vsMarket(offer), onDark: true),
                 ]),
-                const SizedBox(height: 4),
-                Text('${s.pickupIn(offer.pickupInDays)} · ${s.kmAway(offer.km)}', style: t.bodySmall?.copyWith(color: soft)),
               ]),
             ),
           ]),
@@ -463,9 +455,11 @@ class _OfferSheet extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 7),
             child: Row(children: [
               Expanded(child: Text(s.pricePerKg, style: t.bodyMedium?.copyWith(color: c.onSurfaceVariant))),
-              FairnessTag(pct: market.vsMarket(offer)),
-              const SizedBox(width: 8),
-              Text(money(offer.pricePerKg), style: t.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
+              Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                Text(price(offer.pricePerKg), style: t.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 4),
+                FairnessTag(pct: market.vsMarket(offer)),
+              ]),
             ]),
           ),
           line(s.pickupIn(offer.pickupInDays), s.kmAway(offer.km)),
