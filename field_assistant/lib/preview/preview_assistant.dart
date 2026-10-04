@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 
 import '../core/harvest.dart';
+import '../core/strings.dart';
 
 import '../services/assistant.dart';
 import '../services/brain.dart';
@@ -64,15 +65,9 @@ class PreviewAssistant extends Assistant {
       ..add(reply);
     busy = true;
     if (isHarvestQuestion(question)) return _harvest(reply);
-    // Questions mentioning "price" get the "not sure" path, everything else a grounded answer.
-    final notSure = question.toLowerCase().contains('price');
-    await _stream(
-      reply,
-      notSure
-          ? strings.notSure
-          : 'Prune old stems in rotation and keep shade light so air moves. '
-              'Pick up fallen berries after harvest.',
-    );
+    // Questions mentioning a price get the "not sure" path, everything else a grounded answer.
+    final notSure = RegExp(r'\b(?:prices?|bei|prix)\b').hasMatch(question.toLowerCase());
+    await _stream(reply, notSure ? strings.notSure : demoText(strings).answer);
     final match = notSure ? 0.08 : 0.35 + _rng.nextDouble() * 0.3;
     reply
       ..notSure = notSure
@@ -133,7 +128,7 @@ class PreviewAssistant extends Assistant {
     final d = fakeDiagnosis(p: confident ? 0.88 : 0.42);
     reply.diagnosis = d;
     if (confident) {
-      await _stream(reply, 'Leaf rust: yellow-orange powder under the leaf. Prune for airflow.');
+      await _stream(reply, demoText(strings).rustPhotoAnswer);
       reply
         ..caution = strings.photoCaution
         ..sources = const ['coffee_leaf_rust.md']
@@ -143,7 +138,7 @@ class PreviewAssistant extends Assistant {
         final prefix = photoMemoryPrefix(d);
         data.memoryItems
           ..removeWhere((m) => m.id.startsWith(prefix))
-          ..insert(0, MemoryItem('$prefix${DateTime.now().microsecondsSinceEpoch}',
+          ..insert(0, MemoryItem('${photoMemoryIdPrefix(d)}${DateTime.now().microsecondsSinceEpoch}',
               photoMemoryText(strings, d, DateTime.now()), DateTime.now()));
         await refreshMemoryCount();
       }
@@ -174,9 +169,7 @@ class PreviewAssistant extends Assistant {
       notifyListeners();
       await Future<void>.delayed(const Duration(milliseconds: 900));
       weatherStatus = '';
-      const text = 'Cover young plants and nursery beds on the cold night and take the cover off in the morning. '
-          'Before the heavy rain, clear drainage channels and keep the soil covered with mulch. '
-          'In the long wet spell, check leaves and berries for rust every few days.';
+      final text = demoText(strings).weatherAdvice;
       final words = text.split(' ');
       for (var i = 0; i < words.length; i++) {
         reply.text = words.take(i + 1).join(' ');
@@ -218,12 +211,17 @@ class PreviewAssistant extends Assistant {
 }
 
 /// In-memory My farm and Officer data. Changes last until the page reloads.
+/// [language] is the app's current language: the demo facts are shown in it.
 class PreviewFarmData extends FarmData {
-  PreviewFarmData() {
-    queue('Spots on the upper plot, older trees', fakeDiagnosis(p: 0.85).toJson());
+  PreviewFarmData({AppLanguage Function()? language}) : _language = language ?? (() => AppLanguage.en) {
+    queue(demoText(S.forLanguage(_language())).officerNote, fakeDiagnosis(p: 0.85).toJson());
     queue('', fakeDiagnosis(p: 0.4).toJson(), sent: true);
   }
 
+  final AppLanguage Function() _language;
+
+  /// What the farm "remembers". The demo facts are kept in English here (the
+  /// harvest demo reads them) and shown in the app's language by [memories].
   final memoryItems = fakeMemories();
   final outboxItems = <OutboxItem>[];
 
@@ -244,7 +242,10 @@ class PreviewFarmData extends FarmData {
   }
 
   @override
-  Future<List<MemoryItem>> memories() async => List.of(memoryItems);
+  Future<List<MemoryItem>> memories() async {
+    final demo = {for (final m in fakeMemories(_language())) m.id: m};
+    return [for (final m in memoryItems) demo[m.id] ?? m];
+  }
 
   @override
   Future<void> forget(String id) async => memoryItems.removeWhere((m) => m.id == id);

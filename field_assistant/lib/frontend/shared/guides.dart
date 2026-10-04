@@ -1,5 +1,7 @@
 import 'package:flutter/services.dart';
 
+import '../../core/strings.dart';
+
 /// Which crop a guide is about, from its file name (coffee_leaf_rust.md → coffee).
 enum GuideCrop { coffee, maize, beans, more }
 
@@ -31,18 +33,25 @@ class Guide {
   String get text => [title, summary, for (final s in sections) '${s.heading} ${s.text}'].join(' ');
 }
 
-/// Reads every .md/.txt in assets/knowledge/ (one topic per file).
-Future<List<Guide>> loadGuides([AssetBundle? bundle]) async {
+/// Reads every .md/.txt in assets/knowledge/ (one topic per file), in the
+/// farmer's language: the translation in assets/guides/<language>/ with the
+/// same file name when there is one, else the English original. [Guide.source]
+/// stays the English file name, so the assistant's sources still match (the
+/// assistant itself answers from the English files).
+Future<List<Guide>> loadGuides([AssetBundle? bundle, AppLanguage language = AppLanguage.en]) async {
   final b = bundle ?? rootBundle;
   final manifest = await AssetManifest.loadFromAssetBundle(b);
-  final files = manifest
-      .listAssets()
+  final assets = manifest.listAssets().toSet();
+  final files = assets
       .where((a) => a.startsWith('assets/knowledge/') && (a.endsWith('.md') || a.endsWith('.txt')))
       .toList()
     ..sort();
   final out = <Guide>[];
   for (final f in files) {
-    out.addAll(parseGuides(await b.loadString(f), f.split('/').last));
+    final name = f.split('/').last;
+    final translated = 'assets/guides/${language.name}/$name';
+    final path = language != AppLanguage.en && assets.contains(translated) ? translated : f;
+    out.addAll(parseGuides(await b.loadString(path), name));
   }
   return out;
 }

@@ -28,6 +28,16 @@ The files in `assets/knowledge/` were written in plain language from the sources
 - **Crop guides:** coffee_growing, maize_growing, beans_growing, cassava_growing, sorghum_and_millet_growing, rice_growing, sweet_potato_growing
 - **General agronomy:** climate_zones_for_farming, soil_types, soil_ph_and_liming, compost_and_soil_fertility, water_and_dryland_farming, integrated_pest_management, crop_rotation_and_intercropping
 
+## Translations (Guides screen)
+
+`assets/guides/sw/` and `assets/guides/fr/` hold Kiswahili and French translations of every file above, with the same
+file names. The Guides screen shows them in the app's language; the assistant still answers from the English files.
+Each translation keeps the format: a `Title: summary` first line, one `Heading: text` paragraph per English paragraph
+(no colon in the first 70 characters of a paragraph without a heading), the numbers unchanged, and the
+`(Source: …)` note copied as it is. `test/translations_test.dart` checks this, so **a new or changed English guide
+needs its sw and fr files too**. The translations are first drafts (written 3–4 Oct 2026): have a native speaker
+and an extension officer review them before field use.
+
 ## Known gaps
 
 - English only. The LLM answers in the farmer's language, but retrieval works best when the question and passages share a language.

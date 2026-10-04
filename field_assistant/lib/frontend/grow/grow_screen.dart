@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/app_settings.dart';
+import '../../core/strings.dart';
 import '../../services/assistant.dart';
 import '../../services/brain.dart';
 import '../../services/outbox.dart';
@@ -40,11 +41,17 @@ class _GrowScreenState extends State<GrowScreen> {
   List<OutboxItem>? _outbox;
   List<Guide>? _guides;
   bool _sending = false;
+  AppLanguage? _language;
 
   @override
-  void initState() {
-    super.initState();
-    _refresh();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // First build, and again when the farmer picks another language: the guides are translated.
+    final language = SettingsScope.of(context).language;
+    if (language != _language) {
+      _language = language;
+      _refresh();
+    }
   }
 
   Future<void> _refresh() async {
@@ -52,7 +59,7 @@ class _GrowScreenState extends State<GrowScreen> {
     final results = await Future.wait([
       d.memories().catchError((Object _) => <MemoryItem>[]),
       d.outbox().catchError((Object _) => <OutboxItem>[]),
-      d.guides().catchError((Object _) => <Guide>[]),
+      d.guides(_language ?? AppLanguage.en).catchError((Object _) => <Guide>[]),
     ]);
     if (!mounted) return;
     setState(() {
@@ -207,7 +214,7 @@ class _GrowScreenState extends State<GrowScreen> {
       ),
       GroupCard(children: [
         if (facts.isEmpty) RowTile(title: s.memoryEmpty, titleStyle: Theme.of(context).textTheme.bodyMedium),
-        for (final f in facts.take(3)) RowTile(icon: Icons.spa_outlined, title: f.text),
+        for (final f in facts.take(3)) RowTile(icon: Icons.spa_outlined, title: memoryText(s, f)),
         RowTile(
           icon: Icons.add_rounded,
           iconColor: c.primary,

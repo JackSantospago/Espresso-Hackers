@@ -5,9 +5,9 @@ import '../../core/strings.dart';
 import '../shared/guides.dart';
 import '../shared/ui.dart';
 
-/// Icon for a guide, from words in its title (pests, diseases, soil, water…).
+/// Icon for a guide, from words in its (English) file name: pests, diseases, soil, water…
 IconData guideIcon(Guide g) {
-  final t = g.title.toLowerCase();
+  final t = g.source.toLowerCase();
   bool any(List<String> words) => words.any(t.contains);
   if (any(['borer', 'armyworm', 'miner', 'pest', 'insect'])) return Icons.bug_report_outlined;
   if (any(['rust', 'blight', 'spot', 'disease'])) return Icons.coronavirus_outlined;

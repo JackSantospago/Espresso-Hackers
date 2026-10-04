@@ -43,7 +43,7 @@ class DiagnosisCard extends StatelessWidget {
                 children: [
                   Text(verdict, style: t.labelLarge?.copyWith(color: color, fontWeight: FontWeight.w700)),
                   if (d.confident)
-                    Text(d.best.label.display, style: t.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                    Text(d.best.label.localized(s), style: t.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                 ],
               ),
             ),
@@ -81,7 +81,7 @@ class _GuessBar extends StatelessWidget {
           Row(children: [
             Expanded(
               child: Text(
-                guess.label.display,
+                guess.label.localized(context.s),
                 style: t.bodySmall?.copyWith(fontWeight: highlight ? FontWeight.w700 : null),
                 overflow: TextOverflow.ellipsis,
               ),

@@ -149,7 +149,7 @@ class _OutboxCard extends StatelessWidget {
         Container(width: 96, height: 96, color: c.surfaceContainerHighest, child: const Icon(Icons.broken_image_outlined));
     final guessText = guess == null
         ? null
-        : '${s.appGuess}: ${_prettyLabel(guess['label'] as String? ?? '?')}'
+        : '${s.appGuess}: ${_prettyLabel(s, guess['label'] as String? ?? '?')}'
             '${guess['probability'] is num ? ' · ${((guess['probability'] as num) * 100).round()}%' : ''}';
 
     return Padding(
@@ -196,7 +196,12 @@ class _OutboxCard extends StatelessWidget {
     );
   }
 
-  static String _prettyLabel(String id) => id.replaceAll('__', ' – ').replaceAll('_', ' ');
+  /// 'coffee__leaf_rust' → "Coffee – leaf rust", in the farmer's language.
+  static String _prettyLabel(S s, String id) {
+    final condition = s.leafConditions[id];
+    if (condition == null) return id.replaceAll('__', ' – ').replaceAll('_', ' ');
+    return s.leafLabel(id, id.contains('__') ? id.split('__').first : '', condition);
+  }
 }
 
 class _StatusChip extends StatelessWidget {

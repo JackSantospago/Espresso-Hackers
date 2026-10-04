@@ -82,21 +82,29 @@ bool isHarvestQuestion(String q) {
 }
 
 /// Reads trees and flowering month from things the farmer said, e.g.
-/// "I have about 400 coffee trees" and "Our trees flowered in early March".
-/// This is the fallback the AI's extraction is checked against.
+/// "I have about 400 coffee trees" and "Our trees flowered in early March",
+/// also in Kiswahili ("Nina miti 400 ya kahawa", "ilichanua Machi") and French
+/// ("400 caféiers", "ont fleuri en mars"), since My farm keeps facts in the
+/// farmer's language. This is the fallback the AI's extraction is checked against.
 HarvestInputs? harvestInputsFrom(Iterable<String> facts, {required DateTime today}) {
   int? trees;
   int? month;
-  const names = {
-    'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
-    'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12,
-  };
   for (final f in facts) {
     final t = f.toLowerCase();
-    trees ??= int.tryParse(RegExp(r'(\d[\d,]*)\s+(?:coffee\s+)?trees').firstMatch(t)?.group(1)?.replaceAll(',', '') ?? '');
-    if (month == null && (t.contains('flower') || t.contains('bloom'))) {
-      for (final e in names.entries) {
-        if (RegExp('\\b${e.key}').hasMatch(t)) month = e.value;
+    for (final p in _treePatterns) {
+      if (trees != null) break;
+      final m = p.firstMatch(t);
+      if (m != null) trees = int.tryParse(m.group(1)!.replaceAll(RegExp(r'\D'), ''));
+    }
+    if (month == null && _floweringWords.any(t.contains)) {
+      // The month named first in the sentence ("flowered in March, picked in October").
+      int? at;
+      for (final e in _monthPatterns) {
+        final m = e.$1.firstMatch(t);
+        if (m != null && (at == null || m.start < at)) {
+          at = m.start;
+          month = e.$2;
+        }
       }
     }
   }
@@ -105,6 +113,37 @@ HarvestInputs? harvestInputsFrom(Iterable<String> facts, {required DateTime toda
   final year = month <= today.month ? today.year : today.year - 1;
   return HarvestInputs(trees: trees, floweredMonth: month, floweredYear: year);
 }
+
+/// A count as farmers write it: 400, 1,200 or 1 200 (not the end of a year
+/// just before it, as in "in 2024 400 trees").
+const _count = r'(?<![\d,.])(\d{1,3}(?:[,.\s]\d{3})+|\d+)';
+
+final _treePatterns = [
+  RegExp('$_count\\s+(?:coffee\\s+)?trees'), // 400 coffee trees
+  RegExp('$_count\\s+(?:caf[ée]iers|arbres|pieds)'), // 400 caféiers / arbres / pieds de café
+  RegExp('$_count\\s+(?:miti|mikahawa)'), // 400 mikahawa
+  // miti 400 ya kahawa · miti ya kahawa takriban 400
+  RegExp('(?:miti|mikahawa)\\s+(?:ya\\s+kahawa\\s+)?(?:(?:takriban|karibu|kama|zaidi\\s+ya)\\s+)?$_count'),
+];
+
+const _floweringWords = ['flower', 'bloom', 'maua', 'chanua', 'fleur', 'florais'];
+
+/// English as before (first three letters: "Mar", "March"), plus the Kiswahili
+/// and French names that do not start the same way. Short words like "mai"
+/// must stand alone ("mais", "maize" are not May).
+final _monthPatterns = <(RegExp, int)>[
+  for (final (i, m) in ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'].indexed)
+    (RegExp('\\b$m'), i + 1),
+  (RegExp(r'\bf[ée]v'), 2), // février
+  (RegExp(r'\bmachi\b'), 3),
+  (RegExp(r'\bavr'), 4), // avril
+  (RegExp(r'\b(?:mei|mai)\b'), 5),
+  (RegExp(r'\bjuin\b'), 6),
+  (RegExp(r'\bjuil'), 7), // juillet
+  (RegExp(r'\b(?:agosti|ao[uû]t)'), 8),
+  (RegExp(r'\boktoba'), 10),
+  (RegExp(r'\b(?:desemba|d[ée]c)'), 12),
+];
 
 /// Lets a chat reply carry a forecast without changing the message class:
 /// `harvestOf[turn] = forecast`, read by the message bubble.

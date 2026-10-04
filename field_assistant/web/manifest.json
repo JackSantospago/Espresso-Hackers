@@ -1,11 +1,11 @@
 {
-    "name": "field_assistant",
-    "short_name": "field_assistant",
+    "name": "Field Assistant",
+    "short_name": "Field Assistant",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#E2EEE8",
+    "theme_color": "#1E5A46",
+    "description": "Offline farming assistant",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

@@ -127,6 +127,8 @@ class S {
     required this.photoAskDefault,
     required this.photoMemoryHealthy,
     required this.photoMemoryProblem,
+    required this.crops,
+    required this.leafConditions,
     required this.diagLikely,
     required this.diagHealthy,
     required this.diagNotSure,
@@ -307,6 +309,24 @@ class S {
   /// Written to My farm after a confident photo check (a machine guess, so worded as one).
   final String Function(String date, String crop, String percent) photoMemoryHealthy;
   final String Function(String date, String crop, String condition, String percent) photoMemoryProblem;
+
+  /// The leaf model's crops ('coffee', 'bean', 'maize') and conditions (by
+  /// label id, see assets/models/leaf_classifier.json) in this language.
+  final Map<String, String> crops, leafConditions;
+
+  /// "Coffee" from the leaf model → "kahawa" (lower case, for use in a sentence).
+  String cropName(String crop) => crops[crop.toLowerCase()] ?? crop.toLowerCase();
+
+  /// "leaf rust" (label id coffee__leaf_rust) → "kutu ya majani".
+  String conditionName(String labelId, String fallback) => leafConditions[labelId] ?? fallback;
+
+  /// A leaf model label as a title: "Kahawa – kutu ya majani".
+  String leafLabel(String labelId, String crop, String condition) {
+    final c = conditionName(labelId, condition);
+    if (crop.isEmpty) return c;
+    final name = cropName(crop);
+    return '${name[0].toUpperCase()}${name.substring(1)} – $c';
+  }
 
   // Diagnosis card
   final String diagLikely, diagHealthy, diagNotSure;
@@ -574,6 +594,22 @@ final S _en = S(
   photoMemoryHealthy: (date, crop, pct) => 'Photo check $date: a $crop leaf looked healthy ($pct sure).',
   photoMemoryProblem: (date, crop, cond, pct) =>
       'Photo check $date: a $crop leaf looked like $cond ($pct sure, not confirmed).',
+  crops: const {'coffee': 'coffee', 'bean': 'bean', 'maize': 'maize'},
+  leafConditions: const {
+    'coffee__healthy': 'healthy leaf',
+    'coffee__leaf_rust': 'leaf rust',
+    'coffee__cercospora': 'Cercospora leaf spot (brown eye spot)',
+    'coffee__phoma': 'Phoma leaf spot',
+    'coffee__leaf_miner': 'leaf miner (insect damage)',
+    'bean__healthy': 'healthy leaf',
+    'bean__angular_leaf_spot': 'angular leaf spot',
+    'bean__rust': 'bean rust',
+    'maize__healthy': 'healthy leaf',
+    'maize__common_rust': 'common rust',
+    'maize__gray_leaf_spot': 'gray leaf spot',
+    'maize__northern_leaf_blight': 'northern leaf blight',
+    'other': 'not one of the crops this model knows',
+  },
   diagLikely: 'Possible problem',
   diagHealthy: 'Looks healthy',
   diagNotSure: 'Not sure',
@@ -885,6 +921,22 @@ final S _sw = S(
   photoMemoryHealthy: (date, crop, pct) => 'Ukaguzi wa picha $date: jani la $crop lilionekana zima (uhakika $pct).',
   photoMemoryProblem: (date, crop, cond, pct) =>
       'Ukaguzi wa picha $date: jani la $crop lilionekana kuwa na $cond (uhakika $pct, haijathibitishwa).',
+  crops: const {'coffee': 'kahawa', 'bean': 'maharagwe', 'maize': 'mahindi'},
+  leafConditions: const {
+    'coffee__healthy': 'jani zima',
+    'coffee__leaf_rust': 'kutu ya majani',
+    'coffee__cercospora': 'madoa ya Cercospora (jicho la kahawia)',
+    'coffee__phoma': 'madoa ya Phoma',
+    'coffee__leaf_miner': 'mchimba majani (uharibifu wa wadudu)',
+    'bean__healthy': 'jani zima',
+    'bean__angular_leaf_spot': 'madoa pembe',
+    'bean__rust': 'kutu ya maharagwe',
+    'maize__healthy': 'jani zima',
+    'maize__common_rust': 'kutu ya kawaida',
+    'maize__gray_leaf_spot': 'madoa ya kijivu',
+    'maize__northern_leaf_blight': 'ukungu wa kaskazini wa majani',
+    'other': 'si zao ambalo kipimo hiki kinalijua',
+  },
   diagLikely: 'Tatizo linalowezekana',
   diagHealthy: 'Linaonekana zima',
   diagNotSure: 'Sina uhakika',
@@ -1199,6 +1251,22 @@ final S _fr = S(
   photoMemoryHealthy: (date, crop, pct) => 'Vérification photo du $date : une feuille de $crop semblait saine (sûr à $pct).',
   photoMemoryProblem: (date, crop, cond, pct) =>
       'Vérification photo du $date : une feuille de $crop semblait atteinte de $cond (sûr à $pct, non confirmé).',
+  crops: const {'coffee': 'caféier', 'bean': 'haricot', 'maize': 'maïs'},
+  leafConditions: const {
+    'coffee__healthy': 'feuille saine',
+    'coffee__leaf_rust': 'rouille',
+    'coffee__cercospora': 'cercosporiose (taches en œil brun)',
+    'coffee__phoma': 'taches à Phoma',
+    'coffee__leaf_miner': "mineuse des feuilles (dégâts d'insecte)",
+    'bean__healthy': 'feuille saine',
+    'bean__angular_leaf_spot': 'taches anguleuses',
+    'bean__rust': 'rouille du haricot',
+    'maize__healthy': 'feuille saine',
+    'maize__common_rust': 'rouille commune',
+    'maize__gray_leaf_spot': 'cercosporiose (taches grises)',
+    'maize__northern_leaf_blight': 'helminthosporiose du nord',
+    'other': 'pas une des cultures que ce modèle connaît',
+  },
   diagLikely: 'Problème possible',
   diagHealthy: 'Semble saine',
   diagNotSure: 'Pas sûr',

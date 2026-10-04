@@ -1,0 +1,11 @@
+Cercosporiose du maïs (taches grises) : ce que c'est, comment la reconnaître, comment elle se propage et ce que l'agriculteur peut faire.
+
+La cercosporiose du maïs, ou maladie des taches grises (GLS), est causée par des champignons du genre Cercospora. En Afrique, l'espèce principale est Cercospora zeina, ailleurs c'est Cercospora zeae-maydis. C'est la maladie des feuilles du maïs la plus répandue en Afrique, et des pertes de rendement de 20 à 80 % ont été documentées. (Source: PMC review of maize leaf pathogens in Africa)
+
+Symptômes : taches longues, étroites et rectangulaires aux côtés droits, parce qu'elles sont tenues entre les nervures. Elles sont d'abord beige clair puis deviennent grises, en général de 0,5 à 7 cm de long. Les taches apparaissent d'abord sur les feuilles du bas et montent. Beaucoup de taches peuvent se rejoindre et tuer des feuilles entières. (Source: PMC review of maize leaf pathogens in Africa; Crop Protection Network)
+
+Conditions favorables : la maladie a besoin de chaleur (environ 22 à 30 °C) et d'une très forte humidité, au-dessus de 90 % pendant 12 heures ou plus, avec de longues périodes de feuilles mouillées. Le champignon survit sur les résidus de maïs laissés au champ, donc la maladie est la pire là où le maïs suit le maïs. (Source: PMC review of maize leaf pathogens in Africa; Crop Protection Network)
+
+Lutte : semez des variétés résistantes ou tolérantes. Faites une rotation du maïs avec une autre culture comme le haricot, pour que le champignon sur les vieux résidus disparaisse. Enfouissez ou enlevez les résidus infectés après la récolte. L'association de cultures et l'ajustement de la date de semis peuvent aussi réduire la pression de la maladie. Les fongicides coûtent cher et sont rarement utilisés par les petits agriculteurs en Afrique. Demandez à votre conseiller agricole avant de traiter. (Source: PMC review of maize leaf pathogens in Africa; Crop Protection Network)
+
+Cercosporiose ou helminthosporiose : la cercosporiose fait des taches étroites et rectangulaires aux bords droits le long des nervures. L'helminthosporiose du nord fait des taches plus grandes et plus longues, en forme de cigare, aux bouts pointus, qui ne sont pas limitées par les nervures. (Source: PMC review of maize leaf pathogens in Africa; Wikipedia)

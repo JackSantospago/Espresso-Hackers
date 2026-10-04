@@ -1,4 +1,5 @@
 import 'package:field_assistant/core/harvest.dart';
+import 'package:field_assistant/core/strings.dart';
 import 'package:field_assistant/preview/fake_data.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -32,6 +33,22 @@ void main() {
   test('both facts in one reply (what a farmer types after "How many trees…?")', () {
     final i = harvestInputsFrom(['I have 400 coffee trees and they flowered in early March'], today: DateTime(2026, 10, 3))!;
     expect((i.trees, i.floweredMonth), (400, 3));
+  });
+
+  test('the facts can be in Kiswahili or French (My farm keeps the farmer\'s language)', () {
+    for (final lang in AppLanguage.values) {
+      final i = harvestInputsFrom(fakeMemories(lang).map((m) => m.text), today: DateTime(2026, 10, 3))!;
+      expect((i.trees, i.floweredMonth), (400, 3), reason: lang.name);
+    }
+    final sw = harvestInputsFrom(['Nina mikahawa 650.', 'Kahawa ilitoa maua Aprili.'], today: DateTime(2026, 10, 3))!;
+    expect((sw.trees, sw.floweredMonth), (650, 4));
+    final fr = harvestInputsFrom(["J'ai 1 200 pieds de café", 'Le maïs a fleuri en mai, mais le café en juin'],
+        today: DateTime(2026, 10, 3))!;
+    expect((fr.trees, fr.floweredMonth), (1200, 5));
+    // A year right before the count is not part of it.
+    expect(harvestInputsFrom(['In 2024 400 trees were planted', 'They flowered in April'], today: DateTime(2026, 10, 3))!.trees,
+        400);
+    expect(harvestInputsFrom(['My maize flowered in April'], today: DateTime(2026, 10, 3)), isNull);
   });
 
   test('harvest questions in all three languages', () {

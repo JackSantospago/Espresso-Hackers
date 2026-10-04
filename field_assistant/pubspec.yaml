@@ -35,6 +35,9 @@ flutter:
   uses-material-design: true
   assets:
     - assets/knowledge/
+    # The same guides translated for the Guides screen (the assistant reads assets/knowledge/).
+    - assets/guides/sw/
+    - assets/guides/fr/
     - assets/models/
   # Bundled so the app looks the same offline (SIL Open Font License, see assets/fonts/).
   fonts:
