@@ -162,7 +162,9 @@ HarvestForecast forecastHarvest(HarvestInputs i) {
 
 /// The farmer is asking how much she will harvest, or when (en, sw, fr), for a
 /// crop the formulas know. Needs a harvest word AND a how-much/when word, and
-/// no crop we have no figures for (whole words, so "price" is not "rice").
+/// no crop we have no figures for (whole words, so "price" is not "rice" and
+/// "the" is not French "thé"). A question that names no crop is about the crop
+/// of the conversation: see [cropKeyOf].
 bool isHarvestQuestion(String q) {
   final t = q.toLowerCase();
   // Kiswahili: mavuno (harvest), kuvuna / nitavuna (to harvest / I will harvest).
@@ -172,15 +174,10 @@ bool isHarvestQuestion(String q) {
     'kiasi', 'ngapi', 'lini', 'tarajia', // sw
     'combien', 'quand', 'prévoir', 'prevoir', // fr
   ];
-  return harvestWords.any(t.contains) && howMuchOrWhen.any(t.contains) && !_unknownCrop.hasMatch(t);
+  return harvestWords.any(t.contains) && howMuchOrWhen.any(t.contains) && cropKeysIn(t).every(_hasFigures);
 }
 
-/// Crops we have no harvest figures for.
-final _unknownCrop = _words(
-  r'rice|cassava|sorghum|millet|potato(?:es)?|wheat|banana|tea|' // en
-  r'mchele|mpunga|muhogo|mtama|viazi|ngano|ndizi|chai|' // sw
-  r'riz|manioc|sorgho|patates?|bl[ée]|bananes?|th[ée]', // fr
-);
+bool _hasFigures(String key) => harvestCropByKey(key) != null;
 
 /// Whole words, with accented letters counted as letters (a plain \b does not,
 /// so "café" or "blé" would never match).
@@ -209,7 +206,122 @@ HarvestCrop? cropIn(String text) {
 }
 
 /// Which crop a harvest question is about; coffee unless another is named.
+/// The chat uses [cropKeyOf], which also reads the conversation.
 HarvestCrop harvestCropOf(String question) => cropIn(question) ?? HarvestCrop.coffee;
+
+// ---------------------------------------------------------------- any crop
+
+/// Crops without harvest figures, by key, in English, Kiswahili and French, so
+/// a message about potatoes is never read as one about coffee (the crop of a
+/// message that names none). Order matters: "sweet potatoes" and "viazi vikuu"
+/// (yams) are found first and are then not also "potatoes" / "viazi".
+final _otherCropWords = <String, RegExp>{
+  'sweet potato': _words(r'sweet\s+potato(?:e?s)?|viazi\s+vitamu|patates?\s+douces?'),
+  'yam': _words(r'yams?|viazi\s+vikuu|ignames?'),
+  'potato': _words(r'(?:irish\s+)?potato(?:e?s)?|spuds?|viazi(?:\s+(?:mviringo|ulaya))?|pommes?\s+de\s+terre|patates?'),
+  'cassava': _words(r'cassava|muhogo|mihogo|manioc'),
+  'rice': _words(r'rice|paddy|mchele|mpunga|riz'),
+  'sorghum': _words(r'sorghum|mtama|sorgho'),
+  'millet': _words(r'millets?|wimbi|uwele'),
+  'wheat': _words(r'wheat|ngano|blé'),
+  'banana': _words(r'bananas?|plantains?|ndizi|bananes?|bananiers?'),
+  'tea': _words(r'tea|chai|thé'), // not "the"
+  'tomato': _words(r'tomato(?:e?s)?|nyanya|tomates?'),
+  'cabbage': _words(r'cabbages?|kale|sukuma(?:\s+wiki)?|kabichi|choux?'),
+  'onion': _words(r'onions?|vitunguu|kitunguu|oignons?'),
+  'avocado': _words(r'avocados?|parachichi|avocats?|avocatiers?'),
+  'mango': _words(r'mango(?:e?s)?|maembe|embe|mangues?|manguiers?'),
+  'groundnut': _words(r'groundnuts?|peanuts?|karanga|arachides?'),
+  'sugarcane': _words(r'sugar\s*canes?|miwa|canne\s+à\s+sucre'),
+  'cotton': _words(r'cotton|pamba|coton'),
+  'sunflower': _words(r'sunflowers?|alizeti|tournesols?'),
+  'cocoa': _words(r'cocoa|cacao|kakao'),
+};
+
+/// Every crop named in [t] (lower case): start, end and key ('coffee', 'maize',
+/// 'beans' — see [HarvestCrop] — or a key of [_otherCropWords]).
+List<(int, int, String)> _cropMentions(String t) {
+  final out = <(int, int, String)>[
+    for (final e in _cropWords.entries)
+      for (final m in e.value.allMatches(t)) (m.start, m.end, e.key.name),
+  ];
+  var rest = t;
+  for (final e in _otherCropWords.entries) {
+    for (final m in e.value.allMatches(rest)) {
+      out.add((m.start, m.end, e.key));
+    }
+    // Blanked out with spaces (so positions stay): "sweet potatoes" is not also "potatoes".
+    rest = rest.replaceAllMapped(e.value, (m) => ' ' * m[0]!.length);
+  }
+  return out;
+}
+
+/// Every crop named in [text], by key: 'coffee', 'maize' or 'beans' (the crops
+/// with figures, [HarvestCrop.name]) or another crop ('potato', 'rice', …).
+Set<String> cropKeysIn(String text) => {for (final m in _cropMentions(text.toLowerCase())) m.$3};
+
+/// The crop with harvest figures for [key], or null ('potato', 'rice', …).
+HarvestCrop? harvestCropByKey(String key) {
+  for (final c in HarvestCrop.values) {
+    if (c.name == key) return c;
+  }
+  return null;
+}
+
+/// The word the farmer used for the crop [key] in [text] ("potatoes", "viazi"),
+/// so an answer can name it in her language; null if [text] does not name it.
+String? cropWordIn(String text, String key) {
+  final t = text.toLowerCase();
+  for (final m in _cropMentions(t)) {
+    if (m.$3 == key) return t.substring(m.$1, m.$2);
+  }
+  return null;
+}
+
+/// Which crop a message is about, by key (see [cropKeysIn]):
+///  1. the crop it names (a crop with figures first, as [cropIn]);
+///  2. else the crop of the farmer's recent messages ([recent], newest first):
+///     "…planted the potatoes in March" then "How much will we harvest?" is
+///     about potatoes. The newest message naming a crop decides; if it names
+///     several, the conversation does not say which;
+///  3. else the only crop with farm facts saved ([farmFactKeys], like
+///     'maize-acres' — pass them for harvest questions).
+/// Null when nothing says which crop.
+String? cropKeyOf(String question, {Iterable<String> recent = const [], Iterable<String> farmFactKeys = const []}) {
+  final named = cropKeysIn(question);
+  if (named.isNotEmpty) return cropIn(question)?.name ?? named.first;
+  for (final r in recent) {
+    final keys = cropKeysIn(r);
+    if (keys.length == 1) return keys.single;
+    if (keys.length > 1) break;
+  }
+  final withFacts = {for (final k in farmFactKeys) k.split('-').first};
+  return withFacts.length == 1 ? withFacts.single : null;
+}
+
+/// Crops the knowledge base (assets/knowledge) has a guide for. A question
+/// about any other crop must not be answered from another crop's guide.
+const cropsWithGuides = {'coffee', 'maize', 'beans', 'cassava', 'rice', 'sorghum', 'millet', 'sweet potato'};
+
+/// The knowledge file [source] is a guide for a crop other than [key]
+/// ("sweet_potato_growing.md" when the farmer asks about potatoes). General
+/// guides (soil, compost, pests, water, storage…) are for every crop.
+bool guideForAnotherCrop(String source, String key) {
+  const guides = <String, Set<String>>{
+    'coffee_': {'coffee'},
+    'maize_': {'maize'},
+    'bean_': {'beans'},
+    'beans_': {'beans'},
+    'cassava_': {'cassava'},
+    'rice_': {'rice'},
+    'sweet_potato_': {'sweet potato'},
+    'sorghum_and_millet_': {'sorghum', 'millet'},
+  };
+  for (final e in guides.entries) {
+    if (source.startsWith(e.key)) return !e.value.contains(key);
+  }
+  return false;
+}
 
 // ---------------------------------------------------------------- reading facts
 
@@ -229,15 +341,14 @@ HarvestInputs? harvestInputsFrom(Iterable<String> facts, {required DateTime toda
   double? acres;
   for (final f in facts) {
     final t = f.toLowerCase();
-    final named = cropIn(t);
-    final aboutThisCrop = named == crop || (named == null && crop == HarvestCrop.coffee);
-    if (crop == HarvestCrop.coffee && trees == null && (named == null || named == HarvestCrop.coffee)) {
-      trees = _treesIn(t);
-    }
-    if (acres == null && aboutThisCrop) acres = _acresIn(t);
-    if (month == null && (aboutThisCrop || _cropsIn(t).contains(crop))) {
-      month = _monthFor(t, crop);
-    }
+    final keys = cropKeysIn(t);
+    // A fact that names no crop is about coffee, the app's main crop; one that
+    // names only other crops ("2 acres of potatoes") is not.
+    final unnamed = keys.isEmpty;
+    final aboutThisCrop = keys.contains(crop.name) || (unnamed && crop == HarvestCrop.coffee);
+    if (crop == HarvestCrop.coffee && trees == null && aboutThisCrop) trees = _treesIn(t);
+    if (acres == null && aboutThisCrop) acres = _acresFor(t, crop.name, unnamed: unnamed);
+    if (month == null && aboutThisCrop) month = _monthFor(t, crop);
     if (crop == HarvestCrop.coffee && plantedYear == null && aboutThisCrop && _planting.hasMatch(t)) {
       plantedYear = _yearIn(t);
     }
@@ -307,18 +418,32 @@ class FarmFact {
 /// maize in March?"), so it gives no month, and acres only with a crop named.
 List<FarmFact> farmFactsIn(String text, {HarvestCrop? askedFor, bool isQuestion = false}) {
   final t = text.toLowerCase();
-  final named = cropIn(t);
-  final crop = named ?? HarvestCrop.coffee;
+  final keys = cropKeysIn(t);
+  // No crop named: coffee, the app's main crop. Only crops without figures
+  // named ("I planted 2 acres of potatoes"): nothing here is a coffee fact.
+  final crops = keys.isEmpty ? {HarvestCrop.coffee} : _cropsIn(t);
   final out = <FarmFact>[];
-  if (crop == HarvestCrop.coffee) {
+  if (crops.contains(HarvestCrop.coffee)) {
     final trees = _treesIn(t);
     if (trees != null) out.add(FarmFact.trees(trees));
   }
-  final acres = _acresIn(t);
-  if (acres != null && (named != null || (out.isEmpty && !isQuestion))) out.add(FarmFact.acres(crop, acres));
-  final month = isQuestion ? null : _monthFor(t, crop);
-  if (month != null) out.add(FarmFact.month(crop, month));
-  if (out.isEmpty && askedFor != null && t.trim().split(RegExp(r'\s+')).length <= 4) {
+  for (final c in HarvestCrop.values.where(crops.contains)) {
+    // An area with no crop named is coffee's only in a statement with nothing else in it.
+    final acres = keys.isNotEmpty
+        ? _acresFor(t, c.name)
+        : out.isEmpty && !isQuestion
+            ? _acresFor(t, c.name, unnamed: true)
+            : null;
+    if (acres != null) out.add(FarmFact.acres(c, acres));
+  }
+  if (!isQuestion) {
+    for (final c in HarvestCrop.values.where(crops.contains)) {
+      final month = _monthFor(t, c);
+      if (month != null) out.add(FarmFact.month(c, month));
+    }
+  }
+  final otherCrop = keys.isNotEmpty && !keys.contains(askedFor?.name);
+  if (out.isEmpty && askedFor != null && !otherCrop && t.trim().split(RegExp(r'\s+')).length <= 4) {
     final m = RegExp(r'(?<![\d,.])(\d{1,3}(?:[,\s]\d{3})+|\d+(?:[.,]\d+)?)').firstMatch(t);
     final v = m == null ? null : double.tryParse(m.group(1)!.replaceAll(RegExp(r'[,\s](?=\d{3})'), '').replaceAll(',', '.'));
     if (v != null && v > 0) {
@@ -360,20 +485,41 @@ int? _treesIn(String t) {
   return null;
 }
 
-/// "2 acres", "1.5 ha", "2 hectares", "ekari 2", "1,5 ha" → acres.
-double? _acresIn(String t) {
-  final number = r'(\d+(?:[.,]\d+)?)';
-  final before = RegExp('$number\\s*(acres?|ac|ekari|hectares?|ha)\\b').firstMatch(t);
-  final after = RegExp('\\b(ekari|hekta|hectares?)\\s+(?:takriban\\s+|karibu\\s+)?$number').firstMatch(t);
-  final (String? n, String? unit) = before != null
-      ? (before.group(1), before.group(2))
-      : after != null
-          ? (after.group(2), after.group(1))
-          : (null, null);
-  if (n == null || unit == null) return null;
-  final v = double.tryParse(n.replaceAll(',', '.'));
-  if (v == null || v <= 0) return null;
-  return unit.startsWith('h') ? v * _hectareInAcres : v;
+/// Every area in [t]: "2 acres", "1.5 ha", "2 hectares", "ekari 2", "1,5 ha".
+/// Start, end and the area in acres, in reading order.
+List<(int, int, double)> _areasIn(String t) {
+  const number = r'(\d+(?:[.,]\d+)?)';
+  final out = <(int, int, double)>[];
+  void add(RegExpMatch m, String n, String unit) {
+    final v = double.tryParse(n.replaceAll(',', '.'));
+    if (v != null && v > 0) out.add((m.start, m.end, unit.startsWith('h') ? v * _hectareInAcres : v));
+  }
+
+  for (final m in RegExp('$number\\s*(acres?|ac|ekari|hectares?|ha)\\b').allMatches(t)) {
+    add(m, m.group(1)!, m.group(2)!);
+  }
+  for (final m in RegExp('\\b(ekari|hekta|hectares?)\\s+(?:takriban\\s+|karibu\\s+)?$number').allMatches(t)) {
+    add(m, m.group(2)!, m.group(1)!);
+  }
+  return out..sort((a, b) => a.$1.compareTo(b.$1));
+}
+
+/// Acres of the crop [key] in [t]. An area belongs to the crop named closest
+/// to it, preferring the one right after it ("2 acres of maize and 1 acre of
+/// potatoes": maize 2, potatoes 1). An area in a sentence that names no crop
+/// counts only when [unnamed] is true.
+double? _acresFor(String t, String key, {bool unnamed = false}) {
+  final mentions = _cropMentions(t);
+  for (final (start, end, acres) in _areasIn(t)) {
+    if (mentions.isEmpty) {
+      if (unnamed) return acres;
+      continue;
+    }
+    int gap((int, int, String) m) => m.$1 >= end ? m.$1 - end : start - m.$2 + 3;
+    final nearest = mentions.reduce((a, b) => gap(b) < gap(a) ? b : a);
+    if (nearest.$3 == key) return acres;
+  }
+  return null;
 }
 
 int? _yearIn(String t) {
@@ -401,7 +547,7 @@ final _planting = RegExp(
 int? _monthFor(String t, HarvestCrop crop) {
   final words = crop == HarvestCrop.coffee ? _flowering : _planting;
   if (!words.hasMatch(t)) return null;
-  if (_cropsIn(t).length > 1) {
+  if (cropKeysIn(t).length > 1) {
     final at = _cropWords[crop]!.firstMatch(t);
     if (at != null) {
       final month = _firstMonthFrom(t, at.end);

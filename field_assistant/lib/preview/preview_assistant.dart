@@ -59,6 +59,7 @@ class PreviewAssistant extends Assistant {
   Future<void> send(String question) async {
     question = question.trim();
     if (question.isEmpty || busy) return;
+    final recent = [for (final t in turns.reversed) if (t.fromUser) t.text].take(4).toList();
     final reply = ChatTurn('', fromUser: false);
     turns
       ..add(ChatTurn(question, fromUser: true))
@@ -71,14 +72,31 @@ class PreviewAssistant extends Assistant {
     _asked = null;
     final saved = _rememberFacts(question, askedFor: asked);
     final harvestQuestion = isHarvestQuestion(question);
-    if (harvestQuestion || asked != null) {
-      final handled = await _harvest(reply, question,
-          crop: harvestQuestion ? harvestCropOf(question) : asked!, followUp: !harvestQuestion);
+    final farmKeys = [
+      for (final m in data.memoryItems)
+        if (m.id.startsWith('mem:farm:')) m.id.substring('mem:farm:'.length).split(':').first,
+    ];
+    final key = cropKeyOf(question, recent: recent, farmFactKeys: farmKeys);
+    final crop = harvestQuestion ? (key == null ? HarvestCrop.coffee : harvestCropByKey(key)) : asked;
+    if (crop != null) {
+      final handled = await _harvest(reply, question, crop: crop, followUp: !harvestQuestion);
       if (handled) return;
     } else if (saved.isNotEmpty && !question.contains('?')) {
       await _stream(reply, '${saved.join(' ')}\n${strings.notedForForecast}');
       busy = false;
       status = '';
+      notifyListeners();
+      return;
+    }
+    // A crop the guides do not cover (potatoes) is said so, like the real Assistant.
+    final about = cropKeyOf(question, recent: recent);
+    if (about != null && !cropsWithGuides.contains(about)) {
+      final word = cropWordIn(question, about) ?? recent.map((r) => cropWordIn(r, about)).nonNulls.firstOrNull ?? about;
+      await _stream(reply, strings.notCovered(word));
+      reply
+        ..notSure = true
+        ..details = 'no guide for $about · preview (no model)';
+      busy = false;
       notifyListeners();
       return;
     }

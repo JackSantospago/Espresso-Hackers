@@ -135,6 +135,7 @@ class S {
     required this.statusUpdatingMemory,
     required this.notSure,
     required this.weakMatch,
+    required this.notCovered,
     required this.healthy,
     required this.photoNotSureOther,
     required this.photoNotSureGuess,
@@ -327,6 +328,9 @@ class S {
 
   // Fixed answers (the fail-safes)
   final String notSure, weakMatch;
+
+  /// A crop the guides have nothing on, named the way the farmer wrote it.
+  final String Function(String crop) notCovered;
   final String Function(String crop, String percent) healthy;
   final String photoNotSureOther;
   final String Function(String label, String percent) photoNotSureGuess;
@@ -621,6 +625,7 @@ final S _en = S(
   statusUpdatingMemory: 'Remembering what you told me…',
   notSure: "I'm not sure. Please ask your extension officer or cooperative.",
   weakMatch: 'Weak match in my guides. Please check this with a person.',
+  notCovered: (crop) => 'My guides do not cover $crop yet. Please ask your extension officer or cooperative.',
   healthy: (crop, pct) => 'This $crop leaf looks healthy ($pct sure). '
       'If other leaves, berries or stems look different, take a photo of those too. '
       'Many causes of a smaller harvest (soil, rain, tree age) do not show on leaves — '
@@ -964,6 +969,7 @@ final S _sw = S(
   statusUpdatingMemory: 'Ninakumbuka ulichoniambia…',
   notSure: 'Sina uhakika. Tafadhali muulize afisa ugani au chama chako cha ushirika.',
   weakMatch: 'Miongozo yangu haina jibu la uhakika. Tafadhali hakikisha na mtu.',
+  notCovered: (crop) => 'Miongozo yangu bado haina habari kuhusu $crop. Tafadhali muulize afisa ugani au chama chako cha ushirika.',
   healthy: (crop, pct) => 'Jani hili la $crop linaonekana zima (uhakika $pct). '
       'Kama majani mengine, matunda au mashina yanaonekana tofauti, yapige picha pia. '
       'Sababu nyingi za mavuno madogo (udongo, mvua, umri wa miti) hazionekani kwenye majani — '
@@ -1310,6 +1316,7 @@ final S _fr = S(
   statusUpdatingMemory: "Je retiens ce que vous m'avez dit…",
   notSure: 'Je ne suis pas sûr. Demandez à votre conseiller agricole ou à votre coopérative.',
   weakMatch: "Mes guides couvrent mal cette question. Vérifiez auprès d'une personne.",
+  notCovered: (crop) => 'Mes guides ne parlent pas encore de « $crop ». Demandez à votre conseiller agricole ou à votre coopérative.',
   healthy: (crop, pct) => 'Cette feuille de $crop semble saine (sûr à $pct). '
       "Si d'autres feuilles, des baies ou des tiges ont un aspect différent, photographiez-les aussi. "
       "Beaucoup de causes d'une petite récolte (sol, pluie, âge des arbres) ne se voient pas sur les "

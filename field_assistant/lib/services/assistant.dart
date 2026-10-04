@@ -173,6 +173,9 @@ class Assistant extends ChangeNotifier {
     if (_chat == null || question.isEmpty || busy) return;
     final s = strings;
     final history = _recentHistory();
+    // The farmer's last messages, newest first: a question that names no crop
+    // is about the crop she was just talking about (see cropKeyOf).
+    final recent = [for (final t in turns.reversed) if (t.fromUser) t.text].take(4).toList();
     final reply = ChatTurn('', fromUser: false);
     turns
       ..add(ChatTurn(question, fromUser: true))
@@ -190,13 +193,20 @@ class Assistant extends ChangeNotifier {
 
     // Harvest forecast: asked directly, or the farmer answering our question
     // about her trees / acres. A reply without those facts is answered like
-    // any other question.
+    // any other question. Which crop: the one named, else the one of the
+    // conversation, else the only one with farm facts saved, else coffee. A
+    // crop without figures (potatoes) is answered from the guides below.
     final harvestQuestion = isHarvestQuestion(question);
     final followUp = asked != null && !harvestQuestion;
-    if (harvestQuestion || followUp) {
+    final harvestCrop = followUp
+        ? asked
+        : harvestQuestion
+            ? _harvestCrop(cropKeyOf(question, recent: recent, farmFactKeys: await _farmFactKeys()))
+            : null;
+    if (harvestCrop != null) {
       var handled = true;
       try {
-        handled = await _harvest(reply, question, crop: harvestQuestion ? harvestCropOf(question) : asked!, followUp: followUp);
+        handled = await _harvest(reply, question, crop: harvestCrop, followUp: followUp);
       } catch (e) {
         reply
           ..text = s.notSure
@@ -227,9 +237,35 @@ class Assistant extends ChangeNotifier {
     }
 
     try {
-      // 1. Retrieve from knowledge + memory, and the saved forecast (null when weather is off)
-      final hits = await Brain.searchKnowledge(question);
-      final mems = await Brain.relevantMemories(question);
+      // 0. Which crop this is about: named, or from the conversation. A follow-up
+      //    that names no crop is searched together with that crop.
+      final cropKey = cropKeyOf(question, recent: recent);
+      final cropWord = cropKey == null
+          ? ''
+          : cropWordIn(question, cropKey) ?? recent.map((r) => cropWordIn(r, cropKey)).nonNulls.firstOrNull ?? cropKey;
+      final query = cropKey != null && cropKeysIn(question).isEmpty ? '$question ($cropWord)' : question;
+
+      // 1. Retrieve from knowledge + memory, and the saved forecast (null when weather is off).
+      //    A crop without its own guide (potatoes) is never answered from another
+      //    crop's guide (sweet potatoes, coffee): only the general guides count.
+      var hits = await Brain.searchKnowledge(query);
+      final noGuide = cropKey != null && !cropsWithGuides.contains(cropKey);
+      if (cropKey != null && noGuide) {
+        hits = hits.where((h) => !guideForAnotherCrop(h.source, cropKey) && h.score >= kConfidenceThreshold).toList();
+        if (hits.isEmpty) {
+          reply
+            ..text = s.notCovered(cropWord)
+            ..notSure = true
+            ..details = 'no guide for $cropKey';
+          status = s.statusUpdatingMemory;
+          _notify();
+          try {
+            await _updateMemory(question);
+          } catch (_) {/* the answer above stands */}
+          return;
+        }
+      }
+      final mems = await Brain.relevantMemories(query);
       final top = Brain.topScore(hits);
       final confident = top >= kConfidenceThreshold;
       final forecast = await Weather.savedForecast();
@@ -239,8 +275,8 @@ class Assistant extends ChangeNotifier {
               '${forecastForPrompt(forecast, DateTime.now())}\n';
 
       final prompt = '''
-You are an offline farming assistant for smallholder coffee farmers.
-Rules: Answer ONLY from CONTEXT, MEMORY${weather.isEmpty ? '' : ' and WEATHER'} below. Max 3 short sentences, plain words.
+You are an offline farming assistant for smallholder farmers.
+${cropKey == null ? '' : 'The QUESTION is about $cropWord.${noGuide ? ' CONTEXT has only general advice, nothing specific to $cropWord: never use advice for another crop.' : ''}\n'}Rules: Answer ONLY from CONTEXT, MEMORY${weather.isEmpty ? '' : ' and WEATHER'} below. Max 3 short sentences, plain words.
 ${weather.isEmpty ? 'If CONTEXT does not contain' : 'If neither CONTEXT nor WEATHER contains'} the answer, reply exactly: "${s.notSure}"
 Never invent prices, numbers or chemical doses. The farmer makes the final decision.
 Reply in the same language as the QUESTION.
@@ -295,6 +331,22 @@ QUESTION: $question''';
 
   /// We asked for the trees / acres of this crop; the next message answers it.
   HarvestCrop? _awaitingHarvestCrop;
+
+  /// The crop to forecast for a harvest question about [key]: coffee when
+  /// nothing says which crop, null for a crop without figures.
+  static HarvestCrop? _harvestCrop(String? key) => key == null ? HarvestCrop.coffee : harvestCropByKey(key);
+
+  /// Kinds of farm facts saved ('coffee-trees', 'maize-acres', …).
+  Future<List<String>> _farmFactKeys() async {
+    try {
+      return [
+        for (final m in await Brain.memories())
+          if (m.id.startsWith(_farmFactPrefix)) m.id.substring(_farmFactPrefix.length).split(':').first,
+      ];
+    } catch (_) {
+      return const []; // then coffee, as before
+    }
+  }
 
   static const _farmFactPrefix = 'mem:farm:';
 
