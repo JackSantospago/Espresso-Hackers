@@ -68,7 +68,8 @@ class _ChatScreenState extends State<ChatScreen> {
   void _shareHarvest() {
     for (final t in _a.turns.reversed) {
       final f = harvestOf[t];
-      if (f != null) {
+      // Sell is a coffee marketplace: maize and bean forecasts stay in the chat.
+      if (f != null && f.inputs.crop == HarvestCrop.coffee) {
         MarketDemo.instance.setForecast(f);
         return;
       }

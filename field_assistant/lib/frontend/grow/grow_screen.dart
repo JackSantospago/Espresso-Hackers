@@ -80,6 +80,9 @@ class _GrowScreenState extends State<GrowScreen> {
     final note = await showDialog<String>(context: context, builder: (_) => const _NoteDialog());
     if (note == null || note.trim().isEmpty) return;
     await widget.data.remember(note);
+    // Trees, acres or a flowering / planting month in the note are also saved
+    // as exact farm facts, so the harvest forecast uses them.
+    await widget.assistant.noteFarmFacts(note);
     await widget.assistant.refreshMemoryCount();
     await _refresh();
     messenger.showSnackBar(SnackBar(content: Text(s.noteSaved)));

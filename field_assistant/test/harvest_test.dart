@@ -26,7 +26,9 @@ void main() {
     expect(i.trees, 400);
     expect(i.floweredMonth, 3);
     expect(i.floweredYear, 2026);
-    expect(harvestInputsFrom(['I have 1,200 coffee trees'], today: DateTime(2026, 10, 3)), isNull); // no flowering yet
+    // No flowering month said: Kenya's usual season, marked as assumed.
+    final noMonth = harvestInputsFrom(['I have 1,200 coffee trees'], today: DateTime(2026, 10, 3))!;
+    expect((noMonth.trees, noMonth.floweredMonth, noMonth.monthAssumed), (1200, kUsualMonth, true));
     // A flowering month later than today belongs to last year.
     expect(harvestInputsFrom(['50 trees', 'They flowered in November'], today: DateTime(2026, 10, 3))!.floweredYear, 2025);
   });
@@ -45,7 +47,9 @@ void main() {
     expect((sw.trees, sw.floweredMonth), (650, 4));
     final fr = harvestInputsFrom(["J'ai 1 200 pieds de café", 'Le maïs a fleuri en mai, mais le café en juin'],
         today: DateTime(2026, 10, 3))!;
-    expect((fr.trees, fr.floweredMonth), (1200, 5));
+    // "The maize flowered in May, but the coffee in June": for coffee that is June (and
+    // "maïs" / "mais" are not May).
+    expect((fr.trees, fr.floweredMonth), (1200, 6));
     // A year right before the count is not part of it.
     expect(harvestInputsFrom(['In 2024 400 trees were planted', 'They flowered in April'], today: DateTime(2026, 10, 3))!.trees,
         400);
@@ -65,10 +69,11 @@ void main() {
   });
 
   test('other questions do not trigger the forecast', () {
-    expect(isHarvestQuestion('When should I harvest maize?'), isFalse);
+    expect(isHarvestQuestion('When should I harvest rice?'), isFalse); // no figures for rice
     expect(isHarvestQuestion('How do I improve my yield?'), isFalse);
     expect(isHarvestQuestion('How do I store my harvest?'), isFalse);
-    expect(isHarvestQuestion('Nitavuna mahindi lini?'), isFalse);
+    expect(isHarvestQuestion('Nitavuna mchele lini?'), isFalse); // rice, in Kiswahili
+    expect(isHarvestQuestion('Nitavuna mahindi lini?'), isTrue); // maize is supported
     expect(isHarvestQuestion('How much will I harvest?'), isTrue);
     expect(isHarvestQuestion('How much will I harvest, and at what price?'), isTrue); // "price" is not "rice"
   });

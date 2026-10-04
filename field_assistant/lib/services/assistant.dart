@@ -181,14 +181,22 @@ class Assistant extends ChangeNotifier {
     status = s.statusSearching;
     _notify();
 
+    // Farm facts in what the farmer just said (trees, acres, flowering or
+    // planting month) are saved exactly, before anything else, so a later
+    // question in any chat can use them.
+    final asked = _awaitingHarvestCrop;
+    _awaitingHarvestCrop = null;
+    final saved = await _rememberFarmFacts(question, askedFor: asked);
+
     // Harvest forecast: asked directly, or the farmer answering our question
-    // about her trees and flowering month. A reply without those facts is
-    // answered like any other question.
-    final followUp = _awaitingHarvestFacts && !isHarvestQuestion(question);
-    if (isHarvestQuestion(question) || followUp) {
+    // about her trees / acres. A reply without those facts is answered like
+    // any other question.
+    final harvestQuestion = isHarvestQuestion(question);
+    final followUp = asked != null && !harvestQuestion;
+    if (harvestQuestion || followUp) {
       var handled = true;
       try {
-        handled = await _harvest(reply, question, followUp: followUp);
+        handled = await _harvest(reply, question, crop: harvestQuestion ? harvestCropOf(question) : asked!, followUp: followUp);
       } catch (e) {
         reply
           ..text = s.notSure
@@ -203,6 +211,19 @@ class Assistant extends ChangeNotifier {
       }
       status = s.statusSearching;
       _notify();
+    } else if (saved.isNotEmpty && !question.contains('?')) {
+      // A statement about the farm ("I have 400 coffee trees and they flowered
+      // in March"): confirm what was saved instead of searching the guides.
+      reply.text = '${saved.join(' ')}\n${s.notedForForecast}';
+      status = s.statusUpdatingMemory;
+      _notify();
+      try {
+        await _updateMemory(question); // anything else she said (observations, decisions)
+      } catch (_) {/* the facts above are already saved */}
+      busy = false;
+      status = '';
+      _notify();
+      return;
     }
 
     try {
@@ -272,73 +293,119 @@ QUESTION: $question''';
 
   // -------------------------------------------------------- harvest forecast
 
-  /// We asked for the trees and the flowering month; the next message answers it.
-  bool _awaitingHarvestFacts = false;
+  /// We asked for the trees / acres of this crop; the next message answers it.
+  HarvestCrop? _awaitingHarvestCrop;
 
-  /// "How much will I harvest, and when?" The model reads the farm facts and
-  /// fills the formula's inputs; core/harvest.dart does the arithmetic with
-  /// sourced figures; the answer sentence is fixed, so every number shown is
-  /// exactly what the formula gave. Missing inputs → ask for them, never guess.
+  static const _farmFactPrefix = 'mem:farm:';
+
+  /// Saves the farm facts found in [text] exactly (one entry per kind of fact:
+  /// a newer value replaces the older one, nothing else is touched). Returns
+  /// the sentences saved. A failure here never breaks the answer.
+  Future<List<String>> _rememberFarmFacts(String text, {HarvestCrop? askedFor}) async {
+    final facts = farmFactsIn(text, askedFor: askedFor, isQuestion: text.contains('?') && askedFor == null);
+    if (facts.isEmpty) return const [];
+    final saved = <String>[];
+    try {
+      final existing = await Brain.memories();
+      for (final f in facts) {
+        final prefix = '$_farmFactPrefix${f.key}:';
+        for (final m in existing) {
+          if (m.id.startsWith(prefix)) await Brain.forget(m.id);
+        }
+        final sentence = f.text(strings);
+        await Brain.remember(sentence, merge: false, idPrefix: prefix);
+        saved.add(sentence);
+      }
+      await refreshMemoryCount();
+    } catch (_) {/* keep answering; the facts are still in the question itself */}
+    return saved;
+  }
+
+  /// A note the farmer wrote in My farm: its farm facts are saved the same way
+  /// as facts said in the chat, so the forecast uses them.
+  Future<void> noteFarmFacts(String note) => _rememberFarmFacts(note);
+
+  /// "How much will I harvest, and when?" The farm facts are read from the
+  /// question, the saved farm facts and the rest of My farm (newest first); the
+  /// model reads them only when that finds nothing, and may only use numbers
+  /// the farmer actually wrote. core/harvest.dart does the arithmetic with
+  /// sourced figures and the answer sentence is fixed, so every number shown
+  /// is exactly what the formula gave. Missing quantity → ask, never guess.
   /// Returns false when this was a reply to our question that still lacks the
   /// facts, so the caller answers it as a normal question instead.
-  Future<bool> _harvest(ChatTurn reply, String question, {bool followUp = false}) async {
+  Future<bool> _harvest(ChatTurn reply, String question, {required HarvestCrop crop, bool followUp = false}) async {
     final s = strings;
-    _awaitingHarvestFacts = false;
     status = s.statusCalculating;
     _notify();
-    final remembered = (await Brain.memories()).map((m) => m.text).toList();
-    final facts = [...remembered, question];
+    final memories = await Brain.memories(); // newest first
+    final facts = [
+      question,
+      for (final m in memories)
+        if (m.id.startsWith(_farmFactPrefix)) m.text,
+      for (final m in memories)
+        if (!m.id.startsWith(_farmFactPrefix)) m.text,
+    ];
     final today = DateTime.now();
 
-    // 1. The model extracts the inputs.
-    HarvestInputs? fromModel;
-    final out = await _generate('''
-From the farmer's facts below, find how many coffee trees the farmer has and
-the month (1 to 12) the trees last flowered. Use only the facts. Do not guess.
-Reply with JSON only: {"trees": number or null, "flowered_month": number or null}
-
-FACTS:
-${facts.map((f) => '- $f').join('\n')}''');
-    try {
-      final j = jsonDecode(RegExp(r'\{.*\}', dotAll: true).firstMatch(out)!.group(0)!) as Map<String, dynamic>;
-      final trees = (j['trees'] as num?)?.round();
-      final month = (j['flowered_month'] as num?)?.round();
-      final said = facts.join(' ').replaceAll(',', '');
-      // A number the farmer never said is a guess: reject it.
-      if (trees != null && trees > 0 && said.contains('$trees') && month != null && month >= 1 && month <= 12) {
-        fromModel = HarvestInputs(
-          trees: trees,
-          floweredMonth: month,
-          floweredYear: month <= today.month ? today.year : today.year - 1,
-        );
-      }
-    } catch (_) {/* not JSON: fall back to reading the facts directly */}
-
-    // 2. Cross-check with a plain reading of the same facts.
-    final inputs = fromModel ?? harvestInputsFrom(facts, today: today);
+    final inputs = harvestInputsFrom(facts, today: today, crop: crop) ?? await _inputsFromModel(facts, crop, today);
+    final cropName = switch (crop) {
+      HarvestCrop.coffee => s.guidesCoffee,
+      HarvestCrop.maize => s.guidesMaize,
+      HarvestCrop.beans => s.guidesBeans,
+    }.toLowerCase();
     if (inputs == null) {
       if (followUp) return false;
-      reply.text = s.harvestNeed;
-      _awaitingHarvestFacts = true;
+      reply.text = crop == HarvestCrop.coffee ? s.harvestNeed : s.harvestNeedArea(cropName);
+      _awaitingHarvestCrop = crop;
+      return true;
+    }
+    if (inputs.youngTrees) {
+      reply.text = s.harvestYoung;
       return true;
     }
 
-    // 3. The formulas, then a fixed sentence with exactly those numbers.
+    // The formulas, then a fixed sentence with exactly those numbers.
     final f = forecastHarvest(inputs);
     harvestOf[reply] = f;
     String n(int v) => v.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
     reply.text = s.harvestSummary(
         n(f.kgLow), n(f.kgHigh), s.monthsLong[f.readyFrom.month - 1], s.monthsLong[f.readyTo.month - 1]);
-    _notify();
-
-    // 4. Remember what the farmer just told us (trees, flowering), but only if
-    // it is new: then the answer is ready at once ("See in Sell" not greyed out).
-    if (harvestInputsFrom(remembered, today: today) == null) {
-      status = s.statusUpdatingMemory;
-      _notify();
-      await _updateMemory(question);
-    }
     return true;
+  }
+
+  /// For phrasings the plain reading misses: the model fills the inputs as
+  /// JSON. A quantity the farmer never wrote is a guess and is rejected; a
+  /// month is used only if that month is named in the facts.
+  Future<HarvestInputs?> _inputsFromModel(List<String> facts, HarvestCrop crop, DateTime today) async {
+    try {
+      final out = await _generate("""
+From the farmer's facts below, find for ${crop.name}: how many trees (coffee only), how many acres,
+and the month (1 to 12) the ${crop == HarvestCrop.coffee ? 'trees last flowered' : 'crop was planted'}.
+Use only the facts. Do not guess. Reply with JSON only:
+{"trees": number or null, "acres": number or null, "month": number or null}
+
+FACTS:
+${facts.map((f) => '- $f').join('\n')}""");
+      final j = jsonDecode(RegExp(r'\{.*\}', dotAll: true).firstMatch(out)!.group(0)!) as Map<String, dynamic>;
+      final said = facts.join(' ').replaceAll(',', '');
+      bool written(num? v) => v != null && v > 0 && said.contains(v == v.roundToDouble() ? '${v.round()}' : '$v');
+      final trees = crop == HarvestCrop.coffee && written(j['trees'] as num?) ? (j['trees'] as num).round() : null;
+      final acres = written(j['acres'] as num?) ? (j['acres'] as num).toDouble() : null;
+      if (trees == null && acres == null) return null;
+      final m = (j['month'] as num?)?.round();
+      final named = m != null && m >= 1 && m <= 12 && facts.any((f) => monthNamedIn(f, m));
+      final month = named ? m : kUsualMonth;
+      return HarvestInputs(
+        crop: crop,
+        trees: trees,
+        acres: trees == null ? acres : null,
+        floweredMonth: month,
+        floweredYear: month <= today.month ? today.year : today.year - 1,
+        monthAssumed: !named,
+      );
+    } catch (_) {
+      return null; // not JSON, or nothing usable
+    }
   }
 
   bool _saysNotSure(String answer) {

@@ -89,6 +89,17 @@ class S {
     required this.harvestQuestion,
     required this.statusCalculating,
     required this.harvestNeed,
+    required this.factTrees,
+    required this.factAcres,
+    required this.factFlowered,
+    required this.factPlanted,
+    required this.treesFromAcres,
+    required this.acresTimesYield,
+    required this.plantedReady,
+    required this.usualSeason,
+    required this.harvestYoung,
+    required this.harvestNeedArea,
+    required this.notedForForecast,
     required this.harvestSummary,
     required this.monthsShort,
     required this.monthsLong,
@@ -283,6 +294,17 @@ class S {
   final String harvestQuestion;
   final String statusCalculating;
   final String harvestNeed;
+  final String Function(int n) factTrees;
+  final String Function(String acres, String crop) factAcres;
+  final String Function(String month) factFlowered;
+  final String Function(String crop, String month) factPlanted;
+  final String Function(String acres, int perAcre, int trees) treesFromAcres;
+  final String Function(String acres, int low, int high) acresTimesYield;
+  final String Function(String month, int low, int high) plantedReady;
+  final String usualSeason;
+  final String harvestYoung;
+  final String Function(String crop) harvestNeedArea;
+  final String notedForForecast;
   final String Function(String low, String high, String from, String to) harvestSummary;
   final List<String> monthsShort;
   final List<String> monthsLong;
@@ -529,7 +551,18 @@ final S _en = S(
   askNow: 'Ask the assistant',
   harvestQuestion: 'How much coffee will I harvest, and when?',
   statusCalculating: 'Calculating your harvest…',
-  harvestNeed: 'How many coffee trees do you have, and in which month did they flower?',
+  harvestNeed: 'How many coffee trees do you have (or how many acres)?',
+  factTrees: (n) => 'I have $n coffee trees.',
+  factAcres: (acres, crop) => 'I have $acres acres of $crop.',
+  factFlowered: (month) => 'My coffee trees flowered in $month.',
+  factPlanted: (crop, month) => 'I planted my $crop in $month.',
+  treesFromAcres: (acres, perAcre, trees) => '$acres acres × $perAcre trees per acre ≈ $trees trees',
+  acresTimesYield: (acres, low, high) => '$acres acres × $low–$high kg per acre',
+  plantedReady: (month, low, high) => 'Planted in $month, ready $low–$high months later',
+  usualSeason: 'usual season',
+  harvestYoung: 'Your coffee trees are still young: coffee first flowers 3 to 4 years after planting, so there is no harvest to forecast yet.',
+  harvestNeedArea: (crop) => 'How many acres of $crop did you plant?',
+  notedForForecast: 'Noted. I will use this for your harvest forecast.',
   harvestSummary: (low, high, from, to) => 'About $low–$high kg, ready $from to $to.',
   monthsShort: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
   monthsLong: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
@@ -861,7 +894,18 @@ final S _sw = S(
   askNow: 'Muulize msaidizi',
   harvestQuestion: 'Nitavuna kahawa kiasi gani, na lini?',
   statusCalculating: 'Ninahesabu mavuno yako…',
-  harvestNeed: 'Una miti mingapi ya kahawa, na ilitoa maua mwezi gani?',
+  harvestNeed: 'Una miti mingapi ya kahawa (au ekari ngapi)?',
+  factTrees: (n) => 'Nina miti $n ya kahawa.',
+  factAcres: (acres, crop) => 'Nina ekari $acres za $crop.',
+  factFlowered: (month) => 'Kahawa yangu ilitoa maua $month.',
+  factPlanted: (crop, month) => 'Nilipanda $crop $month.',
+  treesFromAcres: (acres, perAcre, trees) => 'Ekari $acres × miti $perAcre kwa ekari ≈ miti $trees',
+  acresTimesYield: (acres, low, high) => 'Ekari $acres × kilo $low–$high kwa ekari',
+  plantedReady: (month, low, high) => 'Ilipandwa $month, tayari baada ya miezi $low–$high',
+  usualSeason: 'msimu wa kawaida',
+  harvestYoung: 'Miti yako ya kahawa bado ni michanga: kahawa hutoa maua mara ya kwanza miaka 3 hadi 4 baada ya kupandwa, kwa hivyo bado hakuna mavuno ya kukadiria.',
+  harvestNeedArea: (crop) => 'Ulipanda ekari ngapi za $crop?',
+  notedForForecast: 'Nimeandika. Nitaitumia kukadiria mavuno yako.',
   harvestSummary: (low, high, from, to) => 'Takriban kilo $low–$high, tayari $from hadi $to.',
   monthsShort: ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ago', 'Sep', 'Okt', 'Nov', 'Des'],
   monthsLong: ['Januari', 'Februari', 'Machi', 'Aprili', 'Mei', 'Juni', 'Julai', 'Agosti', 'Septemba', 'Oktoba', 'Novemba', 'Desemba'],
@@ -1196,7 +1240,18 @@ final S _fr = S(
   askNow: "Demander à l'assistant",
   harvestQuestion: 'Combien de café vais-je récolter, et quand ?',
   statusCalculating: 'Je calcule votre récolte…',
-  harvestNeed: 'Combien de caféiers avez-vous, et en quel mois ont-ils fleuri ?',
+  harvestNeed: "Combien de caféiers avez-vous (ou combien d'acres) ?",
+  factTrees: (n) => "J'ai $n caféiers.",
+  factAcres: (acres, crop) => "J'ai $acres acres de $crop.",
+  factFlowered: (month) => 'Mes caféiers ont fleuri en $month.',
+  factPlanted: (crop, month) => "J'ai semé mes $crop en $month.",
+  treesFromAcres: (acres, perAcre, trees) => '$acres acres × $perAcre arbres par acre ≈ $trees arbres',
+  acresTimesYield: (acres, low, high) => '$acres acres × $low–$high kg par acre',
+  plantedReady: (month, low, high) => 'Semé en $month, prêt $low à $high mois plus tard',
+  usualSeason: 'saison habituelle',
+  harvestYoung: "Vos caféiers sont encore jeunes : le café fleurit pour la première fois 3 à 4 ans après la plantation, il n'y a donc pas encore de récolte à prévoir.",
+  harvestNeedArea: (crop) => "Combien d'acres de $crop avez-vous semés ?",
+  notedForForecast: "Noté. Je m'en servirai pour prévoir votre récolte.",
   harvestSummary: (low, high, from, to) => 'Environ $low–$high kg, prêts de $from à $to.',
   monthsShort: ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'],
   monthsLong: ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'],

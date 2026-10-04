@@ -308,6 +308,45 @@ void main() {
         expect(openedSell, isTrue);
       });
 
+      testWidgets('harvest from memory: asked once, remembered in a new chat, updated by a note', (tester) async {
+        tester.view.physicalSize = const Size(360, 1600);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        final s = settings.strings;
+        final data = PreviewFarmData()..memoryItems.clear(); // a phone that knows nothing about the farm yet
+        final a = PreviewAssistant(s, data);
+        await tester.pumpWidget(_wrap(settings, ChatScreen(assistant: a)));
+        await tester.pump();
+        Future<void> ask(String q) async {
+          a.send(q);
+          await tester.pump(const Duration(seconds: 15));
+          await tester.pumpAndSettle();
+        }
+
+        // 1. Nothing known yet: it asks, once.
+        await ask(s.harvestQuestion);
+        expect(a.turns.last.text, s.harvestNeed);
+        // 2. A short reply is understood and saved exactly.
+        await ask('500');
+        expect(find.text('1,000–1,500 kg'), findsOneWidget);
+        expect(data.memoryItems.map((m) => m.text), contains(s.factTrees(500)));
+        // 3. A new chat: answered from memory, no question.
+        a.clearConversation();
+        await tester.pump();
+        await ask(s.harvestQuestion);
+        expect(a.turns.last.text, isNot(s.harvestNeed));
+        expect(find.text('1,000–1,500 kg'), findsOneWidget);
+        // 4. A note written in My farm replaces the count.
+        await a.noteFarmFacts(s.factTrees(800));
+        a.clearConversation();
+        await tester.pump();
+        await ask(s.harvestQuestion);
+        expect(find.text('1,600–2,400 kg'), findsOneWidget);
+        expect(data.memoryItems.where((m) => m.text == s.factTrees(500)), isEmpty);
+        expect(tester.takeException(), isNull);
+      });
+
       testWidgets('sell: the ring splits sold and still to sell', (tester) async {
         tester.view.physicalSize = const Size(360, 1400);
         tester.view.devicePixelRatio = 1;
@@ -351,4 +390,32 @@ void main() {
       });
     });
   }
+
+  testWidgets('maize: a statement is noted, the forecast names the crop and has no Sell link', (tester) async {
+    tester.view.physicalSize = const Size(360, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final settings = AppSettings();
+    final s = settings.strings;
+    final data = PreviewFarmData()..memoryItems.clear();
+    final a = PreviewAssistant(s, data);
+    await tester.pumpWidget(_wrap(settings, ChatScreen(assistant: a, onOpenSell: () {})));
+    await tester.pump();
+    Future<void> say(String q) async {
+      a.send(q);
+      await tester.pump(const Duration(seconds: 15));
+      await tester.pumpAndSettle();
+    }
+
+    await say('I have 2 acres of maize and I planted it in March');
+    expect(a.turns.last.text, contains(s.notedForForecast));
+    expect(data.memoryItems.map((m) => m.text), containsAll([s.factAcres('2', 'maize'), s.factPlanted('maize', 'March')]));
+
+    await say('How much maize will I harvest?');
+    expect(find.text('${s.harvestTitle} · ${s.guidesMaize}'), findsOneWidget);
+    expect(find.text('1,200–1,600 kg'), findsOneWidget);
+    expect(find.text(s.seeInSell), findsNothing); // Sell is a coffee marketplace
+    expect(tester.takeException(), isNull);
+  });
 }

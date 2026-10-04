@@ -45,3 +45,20 @@ and an extension officer review them before field use.
 - The Phoma material comes mainly from Brazil, which matches the BRACOL training images.
 - Weather warnings (Grow → Weather): no guide yet on protecting crops from hail or strong wind, and frost and heat
   protection are only mentioned in passing, so "What should I do?" answers "not sure" for those.
+
+## Harvest forecast figures (`lib/core/harvest.dart`)
+
+The harvest forecast multiplies what the farmer said (trees or acres, flowering or planting month) by
+these sourced figures and always shows a range. Change them in one place, `lib/core/harvest.dart`.
+
+| Figure | Value used | Source |
+| --- | --- | --- |
+| Coffee cherry per tree (Kenyan smallholders) | 2–3 kg / tree / year | [Business Daily Africa](https://www.businessdailyafrica.com/bd/opinion-analysis/columnists/give-quality-fertiliser-kick-out-third-parties-to-save-coffee-4486772); [Kenyatta University irrigation study](https://ir-library.ku.ac.ke/handle/123456789/10711?show=full) |
+| Arabica: flowering to ripe cherry | 7–9 months | [UNESP maturation study](https://repositorio.unesp.br/handle/11449/179612?show=full) |
+| Coffee trees per acre (conventional 2.75 m spacing, ~1,330 / ha) | 540 | [University of Embu repository, Kenyan coffee density trials](https://repository.embuni.ac.ke/items/6faff039-7f69-4310-b687-a593392fcd96) |
+| Young coffee: first flowers after planting | 3–4 years | `assets/knowledge/coffee_growing.md` (Naturland) |
+| Maize yield (Kenyan average ~1.6–1.7 t/ha) | 600–800 kg / acre | [AgEcon: Maize yields in Kenya](https://ageconsearch.umn.edu/record/295861/files/347.%20Maize%20yields%20in%20Kenya.pdf); [CIMMYT Kenya maize profile](https://dtmass.cimmyt.org/wp-content/uploads/sites/35/2017/05/KenyaMaizeProfile_final.pdf) |
+| Maize: planting to harvest (H513 mid-altitude 100–110 days; H614 highland 160–210 days) | 4–7 months | [Kenya Seed varieties](https://www.standardmedia.co.ke/farmkenya/article/2001372310/kenya-seed-varieties-ensure-food-nutrition-and-sufficiency) |
+| Beans yield (Kenyan average ~490 kg/ha, varieties 560–935 kg/ha) | 200–360 kg / acre | [One Acre Fund, Common Bean Ag Innovations](https://oneacrefund.org/sites/default/files/2023-08/Common_Bean_Ag_Innovations.pdf) |
+| Beans: planting to harvest | 60–90 days (2–3 months) | [One Acre Fund](https://oneacrefund.org/sites/default/files/2023-08/Common_Bean_Ag_Innovations.pdf) |
+| No month given | March (Kenya main season: coffee flowers with the rains, maize and beans planted with the long rains); shown to the farmer as "usual season" | assumption, labelled in the app |

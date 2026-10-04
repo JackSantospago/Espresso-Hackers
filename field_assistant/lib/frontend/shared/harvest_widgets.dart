@@ -123,7 +123,7 @@ class MonthStrip extends StatelessWidget {
   }
 }
 
-/// "How I worked it out": the two formula lines and where the figures come from.
+/// "How I worked it out": the formula lines and where the figures come from.
 class HarvestWorking extends StatelessWidget {
   const HarvestWorking({super.key, required this.forecast});
   final HarvestForecast forecast;
@@ -134,7 +134,7 @@ class HarvestWorking extends StatelessWidget {
     final c = Theme.of(context).colorScheme;
     final t = Theme.of(context).textTheme;
     final i = forecast.inputs;
-    String n(double v) => v == v.roundToDouble() ? v.round().toString() : v.toString();
+    String n(double v) => v == v.roundToDouble() ? v.round().toString() : v.toStringAsFixed(1);
     Widget line(IconData icon, String text) => Padding(
           padding: const EdgeInsets.only(top: 6),
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -143,10 +143,29 @@ class HarvestWorking extends StatelessWidget {
             Expanded(child: Text(text, style: t.bodySmall?.copyWith(color: c.onSurface))),
           ]),
         );
+    final month = s.monthsLong[i.floweredMonth - 1] + (i.monthAssumed ? ' (${s.usualSeason})' : '');
+    final range = kgRange(forecast);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(s.howWorked, style: t.labelMedium?.copyWith(color: c.onSurfaceVariant)),
-      line(Icons.park_outlined, '${s.treesTimesYield(i.trees, n(kCherryKgPerTreeLow), n(kCherryKgPerTreeHigh))} = ${kgRange(forecast)}'),
-      line(Icons.event_outlined, s.floweredRipe(s.monthsLong[i.floweredMonth - 1], kMonthsToRipeLow, kMonthsToRipeHigh)),
+      ...switch (i.crop) {
+        HarvestCrop.coffee => [
+            if (i.trees == null)
+              line(Icons.straighten_rounded, s.treesFromAcres(n(i.acres ?? 0), kCoffeeTreesPerAcre, i.coffeeTrees)),
+            line(Icons.park_outlined,
+                '${s.treesTimesYield(i.coffeeTrees, n(kCherryKgPerTreeLow), n(kCherryKgPerTreeHigh))} = $range'),
+            line(Icons.event_outlined, s.floweredRipe(month, kMonthsToRipeLow, kMonthsToRipeHigh)),
+          ],
+        HarvestCrop.maize => [
+            line(Icons.straighten_rounded,
+                '${s.acresTimesYield(n(i.acres ?? 0), kMaizeKgPerAcreLow, kMaizeKgPerAcreHigh)} = $range'),
+            line(Icons.event_outlined, s.plantedReady(month, kMaizeMonthsLow, kMaizeMonthsHigh)),
+          ],
+        HarvestCrop.beans => [
+            line(Icons.straighten_rounded,
+                '${s.acresTimesYield(n(i.acres ?? 0), kBeansKgPerAcreLow, kBeansKgPerAcreHigh)} = $range'),
+            line(Icons.event_outlined, s.plantedReady(month, kBeansMonthsLow, kBeansMonthsHigh)),
+          ],
+      },
       const SizedBox(height: 6),
       Text(s.harvestSources, style: t.labelSmall?.copyWith(color: c.onSurfaceVariant)),
     ]);
@@ -173,7 +192,16 @@ class HarvestCard extends StatelessWidget {
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Row(children: [
-          Expanded(child: Text(s.harvestTitle, style: t.labelLarge?.copyWith(color: c.onSurfaceVariant))),
+          Expanded(
+            child: Text(
+              switch (forecast.inputs.crop) {
+                HarvestCrop.coffee => s.harvestTitle,
+                HarvestCrop.maize => '${s.harvestTitle} · ${s.guidesMaize}',
+                HarvestCrop.beans => '${s.harvestTitle} · ${s.guidesBeans}',
+              },
+              style: t.labelLarge?.copyWith(color: c.onSurfaceVariant),
+            ),
+          ),
           const EstimateTag(),
         ]),
         const SizedBox(height: 6),

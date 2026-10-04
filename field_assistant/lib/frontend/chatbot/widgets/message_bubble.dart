@@ -107,7 +107,11 @@ class MessageBubble extends StatelessWidget {
                         ]),
                       ),
                       if (harvest != null) ...[
-                        HarvestCard(forecast: harvest, onOpenSell: streaming ? null : onOpenSell),
+                        // Sell is a coffee marketplace: only a coffee forecast links to it.
+                        HarvestCard(
+                          forecast: harvest,
+                          onOpenSell: streaming || harvest.inputs.crop != HarvestCrop.coffee ? null : onOpenSell,
+                        ),
                         const SizedBox(height: 12),
                       ],
                       if (turn.diagnosis != null) ...[

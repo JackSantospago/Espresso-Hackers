@@ -182,7 +182,11 @@ class Brain {
       final near = await FlutterEdgeAi.rag.searchSimilar(
         query: fact,
         topK: 1,
-        threshold: 0.80, // tune: higher = fewer merges
+        // Only an almost identical statement replaces an old one ("I have 400 trees"
+        // -> "I have 600 trees"); at 0.80 different facts about the same topic
+        // ("400 coffee trees" / "the coffee trees flowered in March") replaced
+        // each other and the farm "forgot" things.
+        threshold: 0.92,
         filter: _kind('memory'),
       );
       if (near.isNotEmpty) {

@@ -1,7 +1,15 @@
-/// Harvest forecast: the AI reads the farm facts (trees, when they flowered),
-/// these formulas do the arithmetic exactly, and the AI explains the result.
-/// The figures below are sourced; the answer is always a range, not one number.
+/// Harvest forecast: the farm facts (trees or acres, when they flowered or were
+/// planted) are read from what the farmer said and wrote, these formulas do the
+/// arithmetic exactly, and the answer shows how it was worked out. The figures
+/// below are sourced; the answer is always a range, never one number.
 library;
+
+import 'strings.dart';
+
+/// The crops the formulas know.
+enum HarvestCrop { coffee, maize, beans }
+
+// ---------------------------------------------------------------- figures
 
 /// Kenyan smallholder arabica: about 2–3 kg of cherry per tree and year
 /// (unirrigated ~2.4 kg, irrigated up to ~6.3 kg).
@@ -15,19 +23,78 @@ const kCherryKgPerTreeHigh = 3.0;
 const kMonthsToRipeLow = 7;
 const kMonthsToRipeHigh = 9;
 
-/// What the forecast needs from the farm. The AI fills it from what the farmer
-/// said (memory) and asks for whatever is missing.
-class HarvestInputs {
-  const HarvestInputs({required this.trees, required this.floweredMonth, required this.floweredYear});
-  final int trees;
+/// Conventional Kenyan coffee spacing, 2.75 m x 2.75 m: about 1,330 trees per
+/// hectare, so about 540 per acre. Source: Kenyan density trials (University of
+/// Embu repository; "The costs of establishing various coffee densities in Kenya").
+const kCoffeeTreesPerAcre = 540;
 
-  /// 1 = January … 12 = December.
+/// Young coffee first flowers 3 to 4 years after planting (assets/knowledge/
+/// coffee_growing.md), so trees planted less than 3 years ago give no crop yet.
+const kCoffeeYearsToFirstCrop = 3;
+
+/// Maize: Kenyan smallholder average about 1.6–1.7 t/ha; 600–800 kg per acre
+/// covers it with some spread. Ready 4–7 months after planting (H513, mid
+/// altitude: 100–110 days; H614, highland: 160–210 days).
+/// Sources: AgEcon "Maize yields in Kenya"; CIMMYT Kenya maize profile; Kenya Seed.
+const kMaizeKgPerAcreLow = 600;
+const kMaizeKgPerAcreHigh = 800;
+const kMaizeMonthsLow = 4;
+const kMaizeMonthsHigh = 7;
+
+/// Beans: Kenyan average about 490 kg/ha, common varieties 560–935 kg/ha, so
+/// 200–360 kg per acre. Ready 60–90 days after planting.
+/// Sources: One Acre Fund "Common Bean Ag Innovations"; Kenya bean variety data.
+const kBeansKgPerAcreLow = 200;
+const kBeansKgPerAcreHigh = 360;
+const kBeansMonthsLow = 2;
+const kBeansMonthsHigh = 3;
+
+/// When the farmer has not said the month: Kenya's main season. Coffee flowers
+/// with the rains around March (main crop picked October–December); maize and
+/// beans are planted with the long rains from March. Shown as "usual season".
+const kUsualMonth = 3;
+
+const _hectareInAcres = 2.471;
+
+// ---------------------------------------------------------------- inputs
+
+/// What the forecast needs from the farm.
+class HarvestInputs {
+  const HarvestInputs({
+    this.crop = HarvestCrop.coffee,
+    this.trees,
+    this.acres,
+    required this.floweredMonth,
+    required this.floweredYear,
+    this.monthAssumed = false,
+    this.youngTrees = false,
+  }) : assert(trees != null || acres != null, 'a forecast needs trees or acres');
+
+  final HarvestCrop crop;
+
+  /// Coffee trees, when the farmer said how many.
+  final int? trees;
+
+  /// Area in acres (any crop), when the farmer said it instead of trees.
+  final double? acres;
+
+  /// Coffee: the month the trees flowered. Maize and beans: the month they were
+  /// planted. 1 = January … 12 = December.
   final int floweredMonth;
   final int floweredYear;
+
+  /// The farmer did not say the month; [kUsualMonth] was used.
+  final bool monthAssumed;
+
+  /// Coffee planted less than [kCoffeeYearsToFirstCrop] years ago: no crop yet.
+  final bool youngTrees;
+
+  /// Coffee trees counted or worked out from the area.
+  int get coffeeTrees => trees ?? ((acres ?? 0) * kCoffeeTreesPerAcre).round();
 }
 
 /// The result: a range of kg, the months it will be ready, and how much ripens
-/// each month (for the chart). [steps] shows how it was worked out.
+/// each month (for the chart).
 class HarvestForecast {
   const HarvestForecast({
     required this.inputs,
@@ -51,10 +118,28 @@ class HarvestForecast {
 
 /// The formulas. Pure arithmetic, so the same inputs always give the same answer.
 HarvestForecast forecastHarvest(HarvestInputs i) {
-  final low = (i.trees * kCherryKgPerTreeLow).round();
-  final high = (i.trees * kCherryKgPerTreeHigh).round();
-  final from = DateTime(i.floweredYear, i.floweredMonth + kMonthsToRipeLow);
-  final to = DateTime(i.floweredYear, i.floweredMonth + kMonthsToRipeHigh);
+  final (int low, int high, int monthsLow, int monthsHigh) = switch (i.crop) {
+    HarvestCrop.coffee => (
+        (i.coffeeTrees * kCherryKgPerTreeLow).round(),
+        (i.coffeeTrees * kCherryKgPerTreeHigh).round(),
+        kMonthsToRipeLow,
+        kMonthsToRipeHigh,
+      ),
+    HarvestCrop.maize => (
+        ((i.acres ?? 0) * kMaizeKgPerAcreLow).round(),
+        ((i.acres ?? 0) * kMaizeKgPerAcreHigh).round(),
+        kMaizeMonthsLow,
+        kMaizeMonthsHigh,
+      ),
+    HarvestCrop.beans => (
+        ((i.acres ?? 0) * kBeansKgPerAcreLow).round(),
+        ((i.acres ?? 0) * kBeansKgPerAcreHigh).round(),
+        kBeansMonthsLow,
+        kBeansMonthsHigh,
+      ),
+  };
+  final from = DateTime(i.floweredYear, i.floweredMonth + monthsLow);
+  final to = DateTime(i.floweredYear, i.floweredMonth + monthsHigh);
 
   // Picking is spread over the window and peaks in the middle month(s):
   // weights 1, 2, …, 2, 1 across the months, then scaled to the middle of the range.
@@ -73,10 +158,11 @@ HarvestForecast forecastHarvest(HarvestInputs i) {
   return HarvestForecast(inputs: i, kgLow: low, kgHigh: high, readyFrom: from, readyTo: to, byMonth: byMonth);
 }
 
-/// The farmer is asking how much coffee she will harvest, or when (en, sw, fr).
-/// Needs a harvest word AND a how-much/when word, and no other crop (whole
-/// words, so "price" is not "rice"): the formulas are for coffee, so "When
-/// should I harvest maize?" or "How do I improve my yield?" get a normal answer.
+// ---------------------------------------------------------------- questions
+
+/// The farmer is asking how much she will harvest, or when (en, sw, fr), for a
+/// crop the formulas know. Needs a harvest word AND a how-much/when word, and
+/// no crop we have no figures for (whole words, so "price" is not "rice").
 bool isHarvestQuestion(String q) {
   final t = q.toLowerCase();
   // Kiswahili: mavuno (harvest), kuvuna / nitavuna (to harvest / I will harvest).
@@ -86,79 +172,278 @@ bool isHarvestQuestion(String q) {
     'kiasi', 'ngapi', 'lini', 'tarajia', // sw
     'combien', 'quand', 'prévoir', 'prevoir', // fr
   ];
-  return harvestWords.any(t.contains) && howMuchOrWhen.any(t.contains) && !_otherCrop.hasMatch(t);
+  return harvestWords.any(t.contains) && howMuchOrWhen.any(t.contains) && !_unknownCrop.hasMatch(t);
 }
 
-final _otherCrop = RegExp(
-  r'\b(?:maize|corn|beans?|rice|cassava|sorghum|millet|potato(?:es)?|' // en
-  r'mahindi|maharagwe|mchele|mpunga|muhogo|mtama|viazi|' // sw
-  r'maïs|haricots?|riz|manioc|sorgho|patates?)\b', // fr
+/// Crops we have no harvest figures for.
+final _unknownCrop = _words(
+  r'rice|cassava|sorghum|millet|potato(?:es)?|wheat|banana|tea|' // en
+  r'mchele|mpunga|muhogo|mtama|viazi|ngano|ndizi|chai|' // sw
+  r'riz|manioc|sorgho|patates?|bl[ée]|bananes?|th[ée]', // fr
 );
 
-/// Reads trees and flowering month from things the farmer said, e.g.
-/// "I have about 400 coffee trees" and "Our trees flowered in early March",
-/// also in Kiswahili ("Nina miti 400 ya kahawa", "ilichanua Machi") and French
-/// ("400 caféiers", "ont fleuri en mars"), since My farm keeps facts in the
-/// farmer's language. This is the fallback the AI's extraction is checked against.
-HarvestInputs? harvestInputsFrom(Iterable<String> facts, {required DateTime today}) {
-  int? trees;
-  int? month;
+/// Whole words, with accented letters counted as letters (a plain \b does not,
+/// so "café" or "blé" would never match).
+RegExp _words(String alternatives) => RegExp('(?<!\\p{L})(?:$alternatives)(?!\\p{L})', unicode: true);
+
+final _cropWords = <HarvestCrop, RegExp>{
+  HarvestCrop.coffee: _words(r'coffee|kahawa|mikahawa|caf[ée]|caf[ée]iers?'),
+  // Not "mais" (French "but"): only the spelling with ï.
+  HarvestCrop.maize: _words(r'maize|corn|mahindi|maïs'),
+  HarvestCrop.beans: _words(r'beans?|maharagwe|haricots?'),
+};
+
+/// Every crop named in [t] (lower case).
+Set<HarvestCrop> _cropsIn(String t) => {
+      for (final e in _cropWords.entries)
+        if (e.value.hasMatch(t)) e.key,
+    };
+
+/// The crop named in [text], if any.
+HarvestCrop? cropIn(String text) {
+  final t = text.toLowerCase();
+  for (final e in _cropWords.entries) {
+    if (e.value.hasMatch(t)) return e.key;
+  }
+  return null;
+}
+
+/// Which crop a harvest question is about; coffee unless another is named.
+HarvestCrop harvestCropOf(String question) => cropIn(question) ?? HarvestCrop.coffee;
+
+// ---------------------------------------------------------------- reading facts
+
+/// Reads the inputs for [crop] from things the farmer said or wrote, most
+/// relevant first (put the question first, then saved farm facts, then the
+/// rest of My farm, newest first): the first fact that gives a value wins, so
+/// newer statements replace older ones. Works in English, Kiswahili and French
+/// (My farm keeps facts in the farmer's language).
+///  - coffee: trees ("400 coffee trees", "miti 400 ya kahawa", "400 caféiers"),
+///    or acres of coffee; flowering month; a planting year makes young trees.
+///    Counts of "new" / "more" trees are not the farm's total.
+///  - maize, beans: acres of that crop; planting month.
+/// Returns null only when the quantity (trees or acres) is unknown; a missing
+/// month becomes Kenya's usual season ([kUsualMonth], flagged as assumed).
+HarvestInputs? harvestInputsFrom(Iterable<String> facts, {required DateTime today, HarvestCrop crop = HarvestCrop.coffee}) {
+  int? trees, month, plantedYear;
+  double? acres;
   for (final f in facts) {
     final t = f.toLowerCase();
-    // The largest count wins: a later note like "I planted 50 new trees" must
-    // not shrink a farm the farmer said has 400.
-    for (final p in _treePatterns) {
-      for (final m in p.allMatches(t)) {
-        final n = int.tryParse(m.group(1)!.replaceAll(RegExp(r'\D'), ''));
-        if (n != null && n > 0 && (trees == null || n > trees)) trees = n;
-      }
+    final named = cropIn(t);
+    final aboutThisCrop = named == crop || (named == null && crop == HarvestCrop.coffee);
+    if (crop == HarvestCrop.coffee && trees == null && (named == null || named == HarvestCrop.coffee)) {
+      trees = _treesIn(t);
     }
-    if (month == null) {
-      // The month that belongs to the flowering: the first one named after the
-      // word ("flowered in March, sprayed in May" → March; "they may flower in
-      // April" → April), else the closest one before it.
-      int? key;
-      for (final w in _floweringWords) {
-        final i = t.indexOf(w);
-        if (i >= 0 && (key == null || i < key)) key = i;
-      }
-      if (key != null) {
-        final found = [
-          for (final (re, n) in _monthPatterns)
-            for (final m in re.allMatches(t)) (m.start, n),
-        ]..sort((a, b) => a.$1.compareTo(b.$1));
-        final after = found.where((m) => m.$1 >= key!);
-        if (after.isNotEmpty) {
-          month = after.first.$2;
-        } else if (found.isNotEmpty) {
-          month = found.last.$2;
-        }
-      }
+    if (acres == null && aboutThisCrop) acres = _acresIn(t);
+    if (month == null && (aboutThisCrop || _cropsIn(t).contains(crop))) {
+      month = _monthFor(t, crop);
+    }
+    if (crop == HarvestCrop.coffee && plantedYear == null && aboutThisCrop && _planting.hasMatch(t)) {
+      plantedYear = _yearIn(t);
     }
   }
-  if (trees == null || month == null) return null;
-  // The flowering that feeds this season: the latest one not in the future.
-  final year = month <= today.month ? today.year : today.year - 1;
-  return HarvestInputs(trees: trees, floweredMonth: month, floweredYear: year);
+  if (crop == HarvestCrop.coffee ? (trees == null && acres == null) : acres == null) return null;
+  final assumed = month == null;
+  final m = month ?? kUsualMonth;
+  // The flowering / planting that feeds this season: the latest one not in the future.
+  final year = m <= today.month ? today.year : today.year - 1;
+  return HarvestInputs(
+    crop: crop,
+    trees: crop == HarvestCrop.coffee ? trees : null,
+    acres: crop == HarvestCrop.coffee && trees != null ? null : acres,
+    floweredMonth: m,
+    floweredYear: year,
+    monthAssumed: assumed,
+    youngTrees: crop == HarvestCrop.coffee && plantedYear != null && today.year - plantedYear < kCoffeeYearsToFirstCrop,
+  );
 }
+
+/// One clean farm fact found in what the farmer said, to remember exactly
+/// (instead of hoping a summary keeps the number). [key] is unique per kind of
+/// fact, so a newer value replaces the older one.
+class FarmFact {
+  const FarmFact.trees(this.count)
+      : key = 'coffee-trees',
+        crop = HarvestCrop.coffee,
+        acres = null,
+        month = null;
+  FarmFact.acres(this.crop, double this.acres)
+      : key = '${crop.name}-acres',
+        count = null,
+        month = null;
+  FarmFact.month(this.crop, int this.month)
+      : key = '${crop.name}-month',
+        count = null,
+        acres = null;
+
+  final String key;
+  final HarvestCrop crop;
+  final int? count;
+  final double? acres;
+
+  /// Coffee: flowering month. Maize and beans: planting month.
+  final int? month;
+
+  /// The sentence saved in My farm, in the farmer's language. Written so that
+  /// [harvestInputsFrom] reads it back.
+  String text(S s) {
+    final cropName = switch (crop) {
+      HarvestCrop.coffee => s.guidesCoffee,
+      HarvestCrop.maize => s.guidesMaize,
+      HarvestCrop.beans => s.guidesBeans,
+    }.toLowerCase();
+    if (count != null) return s.factTrees(count!);
+    if (acres != null) return s.factAcres(_acresText(acres!), cropName);
+    final monthName = s.monthsLong[month! - 1];
+    return crop == HarvestCrop.coffee ? s.factFlowered(monthName) : s.factPlanted(cropName, monthName);
+  }
+}
+
+/// The farm facts in one message or note: trees, acres per crop, and the
+/// flowering (coffee) or planting (maize, beans) month. [askedFor]: the crop we
+/// just asked about, so a short reply like "400" or "about 2" is understood
+/// (trees for coffee, acres for maize and beans).
+/// [isQuestion]: a question is not a statement of fact ("When should I plant
+/// maize in March?"), so it gives no month, and acres only with a crop named.
+List<FarmFact> farmFactsIn(String text, {HarvestCrop? askedFor, bool isQuestion = false}) {
+  final t = text.toLowerCase();
+  final named = cropIn(t);
+  final crop = named ?? HarvestCrop.coffee;
+  final out = <FarmFact>[];
+  if (crop == HarvestCrop.coffee) {
+    final trees = _treesIn(t);
+    if (trees != null) out.add(FarmFact.trees(trees));
+  }
+  final acres = _acresIn(t);
+  if (acres != null && (named != null || (out.isEmpty && !isQuestion))) out.add(FarmFact.acres(crop, acres));
+  final month = isQuestion ? null : _monthFor(t, crop);
+  if (month != null) out.add(FarmFact.month(crop, month));
+  if (out.isEmpty && askedFor != null && t.trim().split(RegExp(r'\s+')).length <= 4) {
+    final m = RegExp(r'(?<![\d,.])(\d{1,3}(?:[,\s]\d{3})+|\d+(?:[.,]\d+)?)').firstMatch(t);
+    final v = m == null ? null : double.tryParse(m.group(1)!.replaceAll(RegExp(r'[,\s](?=\d{3})'), '').replaceAll(',', '.'));
+    if (v != null && v > 0) {
+      out.add(askedFor == HarvestCrop.coffee ? FarmFact.trees(v.round()) : FarmFact.acres(askedFor, v));
+    }
+  }
+  return out;
+}
+
+String _acresText(double a) => a == a.roundToDouble() ? a.round().toString() : a.toStringAsFixed(1);
 
 /// A count as farmers write it: 400, 1,200 or 1 200 (not the end of a year
 /// just before it, as in "in 2024 400 trees").
 const _count = r'(?<![\d,.])(\d{1,3}(?:[,.\s]\d{3})+|\d+)';
 
 final _treePatterns = [
-  RegExp('$_count\\s+(?:[a-z]+\\s+){0,2}trees'), // 400 trees · 400 coffee trees · 400 young coffee trees
-  RegExp('$_count\\s+(?:caf[ée]iers|arbres|pieds)'), // 400 caféiers / arbres / pieds de café
-  RegExp('$_count\\s+(?:miti|mikahawa)'), // 400 mikahawa
+  // 400 trees · 400 coffee trees · 400 young coffee trees (group 2: the words between)
+  RegExp('$_count\\s+((?:[a-z]+\\s+){0,2})trees'),
+  RegExp('$_count\\s+()(?:caf[ée]iers|arbres|pieds)'), // 400 caféiers / arbres / pieds de café
+  RegExp('$_count\\s+()(?:miti|mikahawa)'), // 400 mikahawa
   // miti 400 ya kahawa · miti ya kahawa takriban 400
-  RegExp('(?:miti|mikahawa)\\s+(?:ya\\s+kahawa\\s+)?(?:(?:takriban|karibu|kama|zaidi\\s+ya)\\s+)?$_count'),
+  RegExp('(?:miti|mikahawa)\\s+(?:ya\\s+kahawa\\s+)?(?:(?:takriban|karibu|kama|zaidi\\s+ya)\\s+)?$_count()'),
 ];
 
-const _floweringWords = ['flower', 'bloom', 'maua', 'chanua', 'fleur', 'florais'];
+/// "50 new trees" is an addition, not the farm's total.
+final _notATotal = _words(r'new|more|extra|additional|another|other|mpya|nouveaux|suppl[ée]mentaires|autres');
 
-/// English as before (first three letters: "Mar", "March"), plus the Kiswahili
-/// and French names that do not start the same way. Short words like "mai"
-/// must stand alone ("mais", "maize" are not May).
+int? _treesIn(String t) {
+  for (final p in _treePatterns) {
+    for (final m in p.allMatches(t)) {
+      if (_notATotal.hasMatch(m.group(2) ?? '')) continue;
+      // "planted 50 new trees", "nimepanda miti 50 mipya": an addition too.
+      final after = t.substring(m.end, (m.end + 12).clamp(0, t.length));
+      if (RegExp(r'^\s*(?:mipya|nouveaux|de plus)').hasMatch(after)) continue;
+      final n = int.tryParse(m.group(1)!.replaceAll(RegExp(r'\D'), ''));
+      if (n != null && n > 0) return n;
+    }
+  }
+  return null;
+}
+
+/// "2 acres", "1.5 ha", "2 hectares", "ekari 2", "1,5 ha" → acres.
+double? _acresIn(String t) {
+  final number = r'(\d+(?:[.,]\d+)?)';
+  final before = RegExp('$number\\s*(acres?|ac|ekari|hectares?|ha)\\b').firstMatch(t);
+  final after = RegExp('\\b(ekari|hekta|hectares?)\\s+(?:takriban\\s+|karibu\\s+)?$number').firstMatch(t);
+  final (String? n, String? unit) = before != null
+      ? (before.group(1), before.group(2))
+      : after != null
+          ? (after.group(2), after.group(1))
+          : (null, null);
+  if (n == null || unit == null) return null;
+  final v = double.tryParse(n.replaceAll(',', '.'));
+  if (v == null || v <= 0) return null;
+  return unit.startsWith('h') ? v * _hectareInAcres : v;
+}
+
+int? _yearIn(String t) {
+  final m = RegExp(r'\b(19[5-9]\d|20\d\d)\b').firstMatch(t);
+  return m == null ? null : int.parse(m.group(1)!);
+}
+
+/// Flowering and planting, as real words (not any substring: "semblait" is not
+/// "semer", "semaine" is not sowing). Kiswahili verbs take prefixes
+/// (ilitoa maua, ilichanua, nilipanda, ilipandwa), so those match inside a word.
+final _flowering = RegExp(
+  r'(?<!\p{L})(?:flower(?:ed|ing|s)?|bloom(?:ed|ing|s)?|fleur(?:i|ie|is|it|issent|ir|aison)?|florais\w*)(?!\p{L})'
+  r'|maua|chanua',
+  unicode: true,
+);
+final _planting = RegExp(
+  r'(?<!\p{L})(?:plant(?:ed|ing)?|sow(?:ed|n|ing)?|sem[ée](?:e|s|es)?|semer|semons|plant[ée](?:e|s|es)?|planter)(?!\p{L})'
+  r'|pand(?:a|wa|e)',
+  unicode: true,
+);
+
+/// The flowering (coffee) or planting (maize, beans) month for [crop] in one
+/// fact. When the sentence names several crops ("le maïs a fleuri en mai, mais
+/// le café en juin"), the month named after this crop's word.
+int? _monthFor(String t, HarvestCrop crop) {
+  final words = crop == HarvestCrop.coffee ? _flowering : _planting;
+  if (!words.hasMatch(t)) return null;
+  if (_cropsIn(t).length > 1) {
+    final at = _cropWords[crop]!.firstMatch(t);
+    if (at != null) {
+      final month = _firstMonthFrom(t, at.end);
+      if (month != null) return month;
+    }
+  }
+  return _monthAfter(t, words);
+}
+
+int? _firstMonthFrom(String t, int start) {
+  final found = [
+    for (final (re, n) in _monthPatterns)
+      for (final m in re.allMatches(t))
+        if (m.start >= start) (m.start, n),
+  ]..sort((a, b) => a.$1.compareTo(b.$1));
+  return found.isEmpty ? null : found.first.$2;
+}
+
+/// The month that belongs to the flowering / planting: the first one named after
+/// the word ("flowered in March, sprayed in May" → March; "they may flower in
+/// April" → April), else the closest one before it.
+int? _monthAfter(String t, RegExp words) {
+  final key = words.firstMatch(t)?.start;
+  if (key == null) return null;
+  final found = [
+    for (final (re, n) in _monthPatterns)
+      for (final m in re.allMatches(t)) (m.start, n),
+  ]..sort((a, b) => a.$1.compareTo(b.$1));
+  final after = found.where((m) => m.$1 >= key);
+  if (after.isNotEmpty) return after.first.$2;
+  return found.isNotEmpty ? found.last.$2 : null;
+}
+
+/// [month] (1–12) is named in [text], in English, Kiswahili or French.
+bool monthNamedIn(String text, int month) {
+  final t = text.toLowerCase();
+  return _monthPatterns.any((p) => p.$2 == month && p.$1.hasMatch(t));
+}
+
+/// English (first three letters: "Mar", "March"), plus the Kiswahili and French
+/// names that do not start the same way. Short words like "mai" must stand
+/// alone ("mais", "maize" are not May).
 final _monthPatterns = <(RegExp, int)>[
   for (final (i, m) in ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'].indexed)
     (RegExp('\\b$m'), i + 1),

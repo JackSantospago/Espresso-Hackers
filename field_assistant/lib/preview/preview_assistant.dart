@@ -64,7 +64,24 @@ class PreviewAssistant extends Assistant {
       ..add(ChatTurn(question, fromUser: true))
       ..add(reply);
     busy = true;
-    if (isHarvestQuestion(question)) return _harvest(reply);
+    // Same flow as the real Assistant: farm facts are saved first; harvest
+    // questions (or the answer to our question) get a forecast; a statement
+    // with farm facts gets "Noted".
+    final asked = _asked;
+    _asked = null;
+    final saved = _rememberFacts(question, askedFor: asked);
+    final harvestQuestion = isHarvestQuestion(question);
+    if (harvestQuestion || asked != null) {
+      final handled = await _harvest(reply, question,
+          crop: harvestQuestion ? harvestCropOf(question) : asked!, followUp: !harvestQuestion);
+      if (handled) return;
+    } else if (saved.isNotEmpty && !question.contains('?')) {
+      await _stream(reply, '${saved.join(' ')}\n${strings.notedForForecast}');
+      busy = false;
+      status = '';
+      notifyListeners();
+      return;
+    }
     // Questions mentioning a price get the "not sure" path, everything else a grounded answer.
     final notSure = RegExp(r'\b(?:prices?|bei|prix)\b').hasMatch(question.toLowerCase());
     await _stream(reply, notSure ? strings.notSure : demoText(strings).answer);
@@ -81,16 +98,60 @@ class PreviewAssistant extends Assistant {
 
   /// "How much will I harvest?": read the farm facts, run the formulas
   /// (core/harvest.dart), attach the forecast card, explain it in words.
-  Future<void> _harvest(ChatTurn reply) async {
+  /// We asked for the trees / acres of this crop.
+  HarvestCrop? _asked;
+
+  /// Saves farm facts like the real Assistant: one entry per kind of fact,
+  /// a newer value replacing the older one.
+  List<String> _rememberFacts(String text, {HarvestCrop? askedFor}) {
+    final facts = farmFactsIn(text, askedFor: askedFor, isQuestion: text.contains('?') && askedFor == null);
+    final saved = <String>[];
+    for (final f in facts) {
+      final prefix = 'mem:farm:${f.key}:';
+      data.memoryItems.removeWhere((m) => m.id.startsWith(prefix));
+      final sentence = f.text(strings);
+      data.memoryItems.insert(0, MemoryItem('$prefix${DateTime.now().microsecondsSinceEpoch}', sentence, DateTime.now()));
+      saved.add(sentence);
+    }
+    if (saved.isNotEmpty) memoryCount = data.memoryItems.length;
+    return saved;
+  }
+
+  @override
+  Future<void> noteFarmFacts(String note) async => _rememberFacts(note);
+
+  /// "How much will I harvest?": read the farm facts (question, saved farm
+  /// facts, the rest of My farm), run the formulas (core/harvest.dart), attach
+  /// the forecast card. Returns false for a reply that still lacks the facts.
+  Future<bool> _harvest(ChatTurn reply, String question, {required HarvestCrop crop, bool followUp = false}) async {
     status = strings.statusSearching;
     notifyListeners();
     await Future<void>.delayed(const Duration(milliseconds: 600));
     status = strings.statusCalculating;
     notifyListeners();
     await Future<void>.delayed(const Duration(milliseconds: 900));
-    final inputs = harvestInputsFrom(data.memoryItems.map((m) => m.text), today: DateTime.now());
+    final facts = [
+      question,
+      for (final m in data.memoryItems)
+        if (m.id.startsWith('mem:farm:')) m.text,
+      for (final m in data.memoryItems)
+        if (!m.id.startsWith('mem:farm:')) m.text,
+    ];
+    final inputs = harvestInputsFrom(facts, today: DateTime.now(), crop: crop);
     if (inputs == null) {
-      await _stream(reply, strings.harvestNeed);
+      if (followUp) {
+        status = strings.statusSearching;
+        return false;
+      }
+      final cropName = switch (crop) {
+        HarvestCrop.coffee => strings.guidesCoffee,
+        HarvestCrop.maize => strings.guidesMaize,
+        HarvestCrop.beans => strings.guidesBeans,
+      }.toLowerCase();
+      _asked = crop;
+      await _stream(reply, crop == HarvestCrop.coffee ? strings.harvestNeed : strings.harvestNeedArea(cropName));
+    } else if (inputs.youngTrees) {
+      await _stream(reply, strings.harvestYoung);
     } else {
       final f = forecastHarvest(inputs);
       harvestOf[reply] = f;
@@ -106,6 +167,7 @@ class PreviewAssistant extends Assistant {
     busy = false;
     status = '';
     notifyListeners();
+    return true;
   }
 
   @override
