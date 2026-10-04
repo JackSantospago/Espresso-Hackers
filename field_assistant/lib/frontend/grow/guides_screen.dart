@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/app_settings.dart';
 import '../../core/strings.dart';
 import '../shared/guides.dart';
+import '../shared/ui.dart';
 
 /// Icon for a guide, from words in its title (pests, diseases, soil, water…).
 IconData guideIcon(Guide g) {
@@ -24,42 +25,19 @@ String cropLabel(S s, GuideCrop crop) => switch (crop) {
       GuideCrop.more => s.guidesMore,
     };
 
-/// One guide in a list: icon, title, what it covers.
+/// One guide in a list: plain icon, title, crop.
 class GuideTile extends StatelessWidget {
   const GuideTile({super.key, required this.guide, required this.onTap});
   final Guide guide;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
-    final c = Theme.of(context).colorScheme;
-    final t = Theme.of(context).textTheme;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-        child: Row(children: [
-          Container(
-            padding: const EdgeInsets.all(9),
-            decoration: BoxDecoration(color: c.primaryContainer, borderRadius: BorderRadius.circular(12)),
-            child: Icon(guideIcon(guide), size: 20, color: c.onPrimaryContainer),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(guide.title, style: t.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
-              if (guide.summary.isNotEmpty) ...[
-                const SizedBox(height: 2),
-                Text(guide.summary, style: t.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
-              ],
-            ]),
-          ),
-          Icon(Icons.chevron_right_rounded, color: c.onSurfaceVariant),
-        ]),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => RowTile(
+        icon: guideIcon(guide),
+        title: guide.title,
+        subtitle: cropLabel(context.s, guide.crop),
+        onTap: onTap,
+      );
 }
 
 /// Opens a guide to read: sections with their sources, and a shortcut to ask
@@ -82,16 +60,8 @@ Future<void> showGuide(BuildContext context, Guide guide, {void Function(String 
               controller: scroll,
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
               children: [
-                Row(children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: c.primaryContainer, borderRadius: BorderRadius.circular(12)),
-                    child: Icon(guideIcon(guide), size: 20, color: c.onPrimaryContainer),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(cropLabel(s, guide.crop), style: t.labelLarge?.copyWith(color: c.primary)),
-                ]),
-                const SizedBox(height: 14),
+                Text(cropLabel(s, guide.crop), style: t.labelLarge?.copyWith(color: c.primary)),
+                const SizedBox(height: 8),
                 Text(guide.title, style: t.headlineSmall),
                 if (guide.summary.isNotEmpty) ...[
                   const SizedBox(height: 6),
@@ -205,20 +175,10 @@ class _GuidesScreenState extends State<GuidesScreen> {
                   textAlign: TextAlign.center, style: t.bodyMedium?.copyWith(color: c.onSurfaceVariant)),
             )
           else
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                child: Column(children: [
-                  for (var i = 0; i < shown.length; i++) ...[
-                    if (i > 0) const Divider(),
-                    GuideTile(
-                      guide: shown[i],
-                      onTap: () => showGuide(context, shown[i], onAsk: widget.onAsk == null ? null : _askAndClose),
-                    ),
-                  ],
-                ]),
-              ),
-            ),
+            GroupCard(children: [
+              for (final g in shown)
+                GuideTile(guide: g, onTap: () => showGuide(context, g, onAsk: widget.onAsk == null ? null : _askAndClose)),
+            ]),
           const SizedBox(height: 12),
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Icon(Icons.verified_outlined, size: 16, color: c.primary),

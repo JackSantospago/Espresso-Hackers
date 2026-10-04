@@ -85,12 +85,11 @@ class _OutboxScreenState extends State<OutboxScreen> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: c.secondaryContainer.withValues(alpha: 0.6),
+                      color: c.surfaceContainer,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: c.secondary.withValues(alpha: 0.15)),
                     ),
                     child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Icon(Icons.privacy_tip_outlined, color: c.secondary),
+                      Icon(Icons.privacy_tip_outlined, color: c.onSurfaceVariant),
                       const SizedBox(width: 12),
                       Expanded(child: Text(s.outboxIntro)),
                     ]),

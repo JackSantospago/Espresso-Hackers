@@ -4,151 +4,120 @@ import '../../core/app_settings.dart';
 import '../../core/config.dart';
 import '../../services/assistant.dart';
 import '../shared/language_picker.dart';
+import '../shared/ui.dart';
 
-/// "Help": language, how the assistant works, where data lives, and its limits.
+/// "Help": language, the three promises, how it works in three steps, and what
+/// runs on the phone. The full privacy notes and limits sit under "More details".
 class HelpScreen extends StatelessWidget {
   const HelpScreen({super.key, required this.assistant});
   final Assistant assistant;
 
+  static const _promiseIcons = [Icons.lock_outline_rounded, Icons.support_agent_outlined, Icons.how_to_reg_outlined];
+  static const _stepIcons = [Icons.chat_bubble_outline_rounded, Icons.menu_book_outlined, Icons.support_agent_outlined];
+
   @override
   Widget build(BuildContext context) {
     final s = context.s;
+    final t = Theme.of(context).textTheme;
+    final strong = t.bodyLarge?.copyWith(fontWeight: FontWeight.w600);
     return Scaffold(
-      appBar: AppBar(title: Text(s.helpTitle)),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
-        children: [
-          _Section(
-            icon: Icons.translate,
-            title: s.language,
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const LanguagePicker(),
-              const SizedBox(height: 8),
-              Text(s.answersLanguageNote, style: Theme.of(context).textTheme.bodySmall),
-            ]),
-          ),
-          _Section(icon: Icons.lightbulb_outline, title: s.howTitle, child: _Steps(items: s.how)),
-          _Section(icon: Icons.lock_outline, title: s.privacyTitle, child: _Bullets(items: s.privacy)),
-          _Section(icon: Icons.do_not_disturb_on_outlined, title: s.limitsTitle, child: _Bullets(items: s.limits)),
-          ListenableBuilder(
-            listenable: assistant,
-            builder: (context, _) => _Section(
-              icon: Icons.phone_android,
-              title: s.onThisPhone,
-              child: Column(children: [
-                _Row(label: s.modelLlm, value: '${activeLlm.label} · ${activeLlm.sizeLabel}'),
-                _Row(label: s.modelEmbedder, value: '${activeEmbedder.label} · ${activeEmbedder.sizeLabel}'),
-                _Row(
-                  label: s.modelLeaf,
-                  value: assistant.classifier != null
-                      ? 'MobileNetV3 · ${assistant.classifier!.labels.length} classes · ${s.installed}'
-                      : s.notInstalled,
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+          children: [
+            PageHeader(title: s.helpTitle),
+            SectionLabel(s.language),
+            const Card(child: Padding(padding: EdgeInsets.fromLTRB(16, 12, 16, 12), child: LanguagePicker())),
+            const SizedBox(height: 24),
+            GroupCard(children: [
+              for (var i = 0; i < s.promiseTitles.length; i++)
+                RowTile(
+                  icon: _promiseIcons[i % _promiseIcons.length],
+                  iconColor: Theme.of(context).colorScheme.primary,
+                  title: s.promiseTitles[i],
+                  titleStyle: strong,
+                  subtitle: s.promiseTexts[i],
                 ),
-                if (assistant.ready) _Row(label: '', value: s.passages(assistant.knowledgePassages)),
+            ]),
+            const SizedBox(height: 24),
+            SectionLabel(s.howTitle),
+            GroupCard(children: [
+              for (var i = 0; i < s.howShort.length; i++)
+                RowTile(icon: _stepIcons[i % _stepIcons.length], title: s.howShort[i]),
+            ]),
+            const SizedBox(height: 24),
+            SectionLabel(s.onThisPhone),
+            ListenableBuilder(
+              listenable: assistant,
+              builder: (context, _) => GroupCard(children: [
+                RowTile(title: s.modelLlm, trailing: _Value('${activeLlm.label} · ${activeLlm.sizeLabel}')),
+                RowTile(title: s.modelEmbedder, trailing: _Value(activeEmbedder.label)),
+                RowTile(
+                  title: s.modelLeaf,
+                  trailing: _Value(assistant.classifier != null
+                      ? '${assistant.classifier!.labels.length} classes · ${s.installed}'
+                      : s.notInstalled),
+                ),
               ]),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Section extends StatelessWidget {
-  const _Section({required this.icon, required this.title, required this.child});
-  final IconData icon;
-  final String title;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Icon(icon, color: c.primary),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-              ),
-            ]),
-            const SizedBox(height: 12),
-            child,
-          ]),
+            const SizedBox(height: 24),
+            _Details(),
+          ],
         ),
       ),
     );
   }
 }
 
-class _Steps extends StatelessWidget {
-  const _Steps({required this.items});
-  final List<String> items;
+class _Value extends StatelessWidget {
+  const _Value(this.text);
+  final String text;
 
   @override
-  Widget build(BuildContext context) {
-    final c = Theme.of(context).colorScheme;
-    return Column(children: [
-      for (var i = 0; i < items.length; i++)
-        Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            CircleAvatar(
-              radius: 12,
-              backgroundColor: c.primaryContainer,
-              child: Text('${i + 1}',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: c.onPrimaryContainer)),
-            ),
-            const SizedBox(width: 12),
-            Expanded(child: Text(items[i])),
-          ]),
-        ),
-    ]);
-  }
+  Widget build(BuildContext context) => Text(
+        text,
+        textAlign: TextAlign.end,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+      );
 }
 
-class _Bullets extends StatelessWidget {
-  const _Bullets({required this.items});
-  final List<String> items;
-
+/// The full privacy notes and limits, folded away so the page stays short.
+class _Details extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final c = Theme.of(context).colorScheme;
-    return Column(children: [
-      for (final item in items)
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 3),
-              child: Icon(Icons.check_circle_outline, size: 16, color: c.primary),
-            ),
-            const SizedBox(width: 10),
-            Expanded(child: Text(item)),
-          ]),
-        ),
-    ]);
-  }
-}
-
-class _Row extends StatelessWidget {
-  const _Row({required this.label, required this.value});
-  final String label, value;
-
-  @override
-  Widget build(BuildContext context) {
+    final s = context.s;
     final t = Theme.of(context).textTheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Expanded(flex: 2, child: Text(label, style: t.bodySmall)),
-        Expanded(flex: 3, child: Text(value, style: t.bodyMedium?.copyWith(fontWeight: FontWeight.w600))),
-      ]),
+    final c = Theme.of(context).colorScheme;
+    Widget list(String title, List<String> items) => Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(title, style: t.titleSmall),
+            const SizedBox(height: 6),
+            for (final item in items)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Text('·  $item', style: t.bodyMedium?.copyWith(color: c.onSurfaceVariant)),
+              ),
+          ]),
+        );
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+          expandedCrossAxisAlignment: CrossAxisAlignment.start,
+          leading: Icon(Icons.info_outline_rounded, color: c.onSurfaceVariant),
+          title: Text(s.moreDetails, style: t.bodyLarge),
+          children: [
+            list(s.privacyTitle, s.privacy),
+            list(s.limitsTitle, s.limits),
+            Text(s.answersLanguageNote, style: t.bodySmall),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
     );
   }
 }

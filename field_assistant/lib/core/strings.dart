@@ -40,6 +40,12 @@ class S {
     required this.sellIntro,
     required this.sellComing,
     required this.comingSoon,
+    required this.sellTitle,
+    required this.sellSubtitle,
+    required this.promiseTitles,
+    required this.promiseTexts,
+    required this.howShort,
+    required this.moreDetails,
     required this.greetingMorning,
     required this.greetingAfternoon,
     required this.greetingEvening,
@@ -170,7 +176,11 @@ class S {
   // Sell (placeholder until there is a market feature)
   final String sellIntro;
   final List<String> sellComing;
-  final String comingSoon;
+  final String comingSoon, sellTitle, sellSubtitle;
+
+  // Help (short versions for the main view; the long lists sit under "More details")
+  final List<String> promiseTitles, promiseTexts, howShort;
+  final String moreDetails;
 
   // Chat extras
   final String greetingMorning, greetingAfternoon, greetingEvening, copy, copied;
@@ -254,6 +264,24 @@ final S _en = S(
   tabGrow: 'Grow',
   tabSell: 'Sell',
   comingSoon: 'Coming soon',
+  sellTitle: 'Sell your harvest',
+  sellSubtitle: 'Everything to get your harvest to market.',
+  promiseTitles: [
+    'Private',
+    'Honest',
+    'You decide',
+  ],
+  promiseTexts: [
+    'Your questions never leave this phone.',
+    'When it is not sure, it says so.',
+    'It advises. You make the decision.',
+  ],
+  howShort: [
+    'Ask, or photograph a leaf.',
+    'It reads the guides on this phone. No internet needed.',
+    'Not sure? It points you to your extension officer.',
+  ],
+  moreDetails: 'More details',
   greetingMorning: 'Good morning',
   greetingAfternoon: 'Good afternoon',
   greetingEvening: 'Good evening',
@@ -261,9 +289,9 @@ final S _en = S(
   copied: 'Copied',
   sellIntro: 'Selling your harvest is coming soon. Here is what this page will help with:',
   sellComing: [
-    'Keep a record of what you harvested and sold.',
-    'Find your cooperative and buyers near you.',
-    'Get your coffee ready for the buyer: drying, sorting, storage.',
+    'Harvest and sales record',
+    'Buyers and cooperatives near you',
+    'Prepare coffee for the buyer',
   ],
   loadingModel: 'Loading the assistant…',
   loadFailed: 'The assistant could not start.',
@@ -430,6 +458,24 @@ final S _sw = S(
   tabGrow: 'Kilimo',
   tabSell: 'Uza',
   comingSoon: 'Inakuja hivi karibuni',
+  sellTitle: 'Uza mavuno yako',
+  sellSubtitle: 'Kila kitu cha kufikisha mavuno yako sokoni.',
+  promiseTitles: [
+    'Faragha',
+    'Ukweli',
+    'Wewe unaamua',
+  ],
+  promiseTexts: [
+    'Maswali yako hayatoki kwenye simu hii.',
+    'Isipokuwa na uhakika, inakuambia.',
+    'Inashauri. Uamuzi ni wako.',
+  ],
+  howShort: [
+    'Uliza, au piga picha ya jani.',
+    'Inasoma miongozo iliyo kwenye simu hii. Bila intaneti.',
+    'Haina uhakika? Inakuelekeza kwa afisa ugani.',
+  ],
+  moreDetails: 'Maelezo zaidi',
   greetingMorning: 'Habari za asubuhi',
   greetingAfternoon: 'Habari za mchana',
   greetingEvening: 'Habari za jioni',
@@ -437,9 +483,9 @@ final S _sw = S(
   copied: 'Imenakiliwa',
   sellIntro: 'Kuuza mavuno yako kunakuja hivi karibuni. Ukurasa huu utakusaidia:',
   sellComing: [
-    'Kuweka kumbukumbu ya ulichovuna na kuuza.',
-    'Kupata chama chako cha ushirika na wanunuzi karibu nawe.',
-    'Kuandaa kahawa yako kwa mnunuzi: kukausha, kuchambua, kuhifadhi.',
+    'Kumbukumbu ya mavuno na mauzo',
+    'Wanunuzi na vyama vya ushirika karibu nawe',
+    'Andaa kahawa kwa mnunuzi',
   ],
   loadingModel: 'Inapakia msaidizi…',
   loadFailed: 'Msaidizi hakuweza kuanza.',
@@ -607,6 +653,24 @@ final S _fr = S(
   tabGrow: 'Cultiver',
   tabSell: 'Vendre',
   comingSoon: 'Bientôt disponible',
+  sellTitle: 'Vendez votre récolte',
+  sellSubtitle: 'Tout pour amener votre récolte au marché.',
+  promiseTitles: [
+    'Privé',
+    'Honnête',
+    'Vous décidez',
+  ],
+  promiseTexts: [
+    'Vos questions ne quittent jamais ce téléphone.',
+    "Quand il n'est pas sûr, il le dit.",
+    'Il conseille. Vous décidez.',
+  ],
+  howShort: [
+    'Posez une question, ou photographiez une feuille.',
+    'Il lit les guides stockés sur ce téléphone. Sans internet.',
+    'Pas sûr ? Il vous oriente vers votre conseiller agricole.',
+  ],
+  moreDetails: 'Plus de détails',
   greetingMorning: 'Bonjour',
   greetingAfternoon: 'Bon après-midi',
   greetingEvening: 'Bonsoir',
@@ -614,9 +678,9 @@ final S _fr = S(
   copied: 'Copié',
   sellIntro: 'La vente de votre récolte arrive bientôt. Cette page vous aidera à :',
   sellComing: [
-    'Garder une trace de ce que vous avez récolté et vendu.',
-    'Trouver votre coopérative et des acheteurs près de chez vous.',
-    "Préparer votre café pour l'acheteur : séchage, tri, stockage.",
+    'Registre des récoltes et des ventes',
+    'Acheteurs et coopératives près de chez vous',
+    "Préparer le café pour l'acheteur",
   ],
   loadingModel: "Chargement de l'assistant…",
   loadFailed: "L'assistant n'a pas pu démarrer.",

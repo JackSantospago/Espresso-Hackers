@@ -136,7 +136,7 @@ abstract final class AppTheme {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         height: 72,
-        indicatorColor: c.primaryContainer,
+        indicatorColor: c.surfaceContainerHigh,
         indicatorShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(
               fontFamily: body,
@@ -146,7 +146,7 @@ abstract final class AppTheme {
             )),
         iconTheme: WidgetStateProperty.resolveWith((states) => IconThemeData(
               size: 24,
-              color: states.contains(WidgetState.selected) ? c.onPrimaryContainer : c.onSurfaceVariant,
+              color: states.contains(WidgetState.selected) ? c.onSurface : c.onSurfaceVariant,
             )),
       ),
       cardTheme: CardThemeData(

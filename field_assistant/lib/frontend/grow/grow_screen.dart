@@ -6,6 +6,7 @@ import '../../services/brain.dart';
 import '../../services/outbox.dart';
 import '../shared/farm_data.dart';
 import '../shared/guides.dart';
+import '../shared/ui.dart';
 import 'guides_screen.dart';
 import 'memory_screen.dart';
 import 'outbox_screen.dart';
@@ -84,129 +85,107 @@ class _GrowScreenState extends State<GrowScreen> {
   @override
   Widget build(BuildContext context) {
     final s = context.s;
-    final t = Theme.of(context).textTheme;
-    final c = Theme.of(context).colorScheme;
     final facts = _facts, outbox = _outbox, guides = _guides;
     return Scaffold(
-      appBar: AppBar(title: Text(s.tabGrow)),
-      body: facts == null || outbox == null || guides == null
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _refresh,
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                children: [
-                  Text(s.growIntro, style: t.bodyMedium?.copyWith(color: c.onSurfaceVariant)),
-                  const SizedBox(height: 16),
-                  _farmCard(context, facts),
-                  const SizedBox(height: 14),
-                  _guidesCard(context, guides),
-                  const SizedBox(height: 14),
-                  _officerCard(context, outbox),
-                ],
-              ),
-            ),
-    );
-  }
-
-  Widget _farmCard(BuildContext context, List<MemoryItem> facts) {
-    final s = context.s;
-    final c = Theme.of(context).colorScheme;
-    final t = Theme.of(context).textTheme;
-    return _Section(
-      icon: Icons.agriculture_outlined,
-      title: s.farmTitle,
-      subtitle: s.factsCount(facts.length),
-      onSeeAll: facts.isEmpty ? null : () => _open(MemoryScreen(assistant: widget.assistant, data: widget.data)),
-      children: [
-        if (facts.isEmpty)
-          Text(s.memoryEmpty, style: t.bodyMedium?.copyWith(color: c.onSurfaceVariant))
-        else
-          for (final f in facts.take(3))
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Icon(Icons.spa_outlined, size: 18, color: c.primary),
+      body: SafeArea(
+        child: facts == null || outbox == null || guides == null
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                onRefresh: _refresh,
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                  children: [
+                    PageHeader(title: s.tabGrow),
+                    ..._farm(context, facts),
+                    const SizedBox(height: 24),
+                    ..._guidesGroup(context, guides, facts),
+                    const SizedBox(height: 24),
+                    ..._officer(context, outbox),
+                  ],
                 ),
-                const SizedBox(width: 10),
-                Expanded(child: Text(f.text, style: t.bodyMedium)),
-              ]),
-            ),
-        const SizedBox(height: 10),
-        OutlinedButton.icon(
-          onPressed: _addNote,
-          icon: const Icon(Icons.add_rounded, size: 20),
-          label: Text(s.addNote),
-        ),
-      ],
+              ),
+      ),
     );
   }
 
-  Widget _guidesCard(BuildContext context, List<Guide> guides) {
+  List<Widget> _farm(BuildContext context, List<MemoryItem> facts) {
+    final s = context.s;
+    final c = Theme.of(context).colorScheme;
+    return [
+      SectionLabel(
+        s.farmTitle,
+        action: s.seeAll,
+        onAction: facts.isEmpty ? null : () => _open(MemoryScreen(assistant: widget.assistant, data: widget.data)),
+      ),
+      GroupCard(children: [
+        if (facts.isEmpty) RowTile(title: s.memoryEmpty, titleStyle: Theme.of(context).textTheme.bodyMedium),
+        for (final f in facts.take(3)) RowTile(icon: Icons.spa_outlined, title: f.text),
+        RowTile(
+          icon: Icons.add_rounded,
+          iconColor: c.primary,
+          title: s.addNote,
+          titleStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(color: c.primary, fontWeight: FontWeight.w600),
+          trailing: const SizedBox.shrink(),
+          onTap: _addNote,
+        ),
+      ]),
+    ];
+  }
+
+  List<Widget> _guidesGroup(BuildContext context, List<Guide> guides, List<MemoryItem> facts) {
     final s = context.s;
     final c = Theme.of(context).colorScheme;
     final t = Theme.of(context).textTheme;
-    return _Section(
-      icon: Icons.menu_book_outlined,
-      title: s.guidesTitle,
-      children: [
-        if (guides.isEmpty)
-          Text(s.guidesEmpty, style: t.bodyMedium?.copyWith(color: c.onSurfaceVariant))
-        else
-          for (final (i, g) in _forFarm(guides, _facts ?? const []).take(3).indexed) ...[
-            if (i > 0) const Divider(),
+    final openAll = guides.length <= 3 ? null : () => _open(GuidesScreen(guides: guides, onAsk: widget.onAsk));
+    return [
+      SectionLabel(s.guidesTitle, action: s.seeAllGuides(guides.length), onAction: openAll),
+      if (guides.isEmpty)
+        GroupCard(children: [RowTile(title: s.guidesEmpty)])
+      else
+        GroupCard(children: [
+          for (final g in _forFarm(guides, facts).take(3))
             GuideTile(guide: g, onTap: () => showGuide(context, g, onAsk: widget.onAsk)),
-          ],
-        const SizedBox(height: 8),
-        // The trust line: where answers come from, and that it works offline.
-        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Icon(Icons.verified_outlined, size: 16, color: c.primary),
+        ]),
+      // The trust line: where answers come from, and that it works offline.
+      Padding(
+        padding: const EdgeInsets.fromLTRB(4, 10, 4, 0),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(Icons.verified_outlined, size: 15, color: c.primary),
           const SizedBox(width: 8),
           Expanded(child: Text(s.guidesNote, style: t.bodySmall)),
         ]),
-        if (guides.length > 3) ...[
-          const SizedBox(height: 4),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton(
-              onPressed: () => _open(GuidesScreen(guides: guides, onAsk: widget.onAsk)),
-              child: Text(s.seeAllGuides(guides.length)),
-            ),
-          ),
-        ],
-      ],
-    );
+      ),
+    ];
   }
 
-  Widget _officerCard(BuildContext context, List<OutboxItem> outbox) {
+  List<Widget> _officer(BuildContext context, List<OutboxItem> outbox) {
     final s = context.s;
-    final c = Theme.of(context).colorScheme;
-    final t = Theme.of(context).textTheme;
     final waiting = outbox.where((i) => !i.sent).length;
     final sent = outbox.length - waiting;
-    return _Section(
-      icon: Icons.support_agent_outlined,
-      title: s.outboxTitle,
-      subtitle: outbox.isEmpty ? null : s.officerSummary(waiting, sent),
-      onSeeAll: outbox.isEmpty
-          ? null
-          : () => _open(OutboxScreen(assistant: widget.assistant, data: widget.data)),
-      children: [
-        Text(outbox.isEmpty ? s.outboxEmpty : s.outboxIntro, style: t.bodyMedium?.copyWith(color: c.onSurfaceVariant)),
-        if (waiting > 0) ...[
-          const SizedBox(height: 12),
-          FilledButton.tonalIcon(
-            onPressed: _sending ? null : _sendNow,
-            icon: _sending
-                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.cloud_upload_outlined),
-            label: Text(s.sendNow(waiting)),
+    return [
+      SectionLabel(
+        s.outboxTitle,
+        action: s.seeAll,
+        onAction: outbox.isEmpty ? null : () => _open(OutboxScreen(assistant: widget.assistant, data: widget.data)),
+      ),
+      GroupCard(children: [
+        RowTile(
+          icon: Icons.support_agent_outlined,
+          title: outbox.isEmpty ? s.outboxEmpty : s.officerSummary(waiting, sent),
+        ),
+        if (waiting > 0)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+            child: FilledButton.tonal(
+              onPressed: _sending ? null : _sendNow,
+              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(44)),
+              child: _sending
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : Text(s.sendNow(waiting)),
+            ),
           ),
-        ],
-      ],
-    );
+      ]),
+    ];
   }
 }
 
@@ -244,7 +223,6 @@ class _NoteDialogState extends State<_NoteDialog> {
   Widget build(BuildContext context) {
     final s = context.s;
     return AlertDialog(
-      icon: const Icon(Icons.edit_note_rounded),
       title: Text(s.addNote),
       content: TextField(
         controller: _controller,
@@ -258,47 +236,6 @@ class _NoteDialogState extends State<_NoteDialog> {
         TextButton(onPressed: () => Navigator.pop(context), child: Text(s.cancel)),
         FilledButton(onPressed: () => Navigator.pop(context, _controller.text), child: Text(s.save)),
       ],
-    );
-  }
-}
-
-/// A card with an icon, a title (and optional count line), a "See all" link and content.
-class _Section extends StatelessWidget {
-  const _Section({required this.icon, required this.title, required this.children, this.subtitle, this.onSeeAll});
-  final IconData icon;
-  final String title;
-  final String? subtitle;
-  final VoidCallback? onSeeAll;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.s;
-    final c = Theme.of(context).colorScheme;
-    final t = Theme.of(context).textTheme;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Row(children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: c.primaryContainer, borderRadius: BorderRadius.circular(12)),
-              child: Icon(icon, size: 20, color: c.onPrimaryContainer),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(title, style: t.titleMedium),
-                if (subtitle != null) Text(subtitle!, style: t.bodySmall),
-              ]),
-            ),
-            if (onSeeAll != null) TextButton(onPressed: onSeeAll, child: Text(s.seeAll)),
-          ]),
-          const SizedBox(height: 12),
-          ...children,
-        ]),
-      ),
     );
   }
 }

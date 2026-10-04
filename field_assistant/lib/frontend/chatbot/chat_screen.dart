@@ -220,23 +220,13 @@ class _Welcome extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, box) {
         // Short screens (iPhone SE, small Androids) get a smaller potato.
-        final halo = box.maxHeight < 470 ? 110.0 : 160.0;
+        final size = box.maxHeight < 470 ? 92.0 : 120.0;
         return Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(28, 8, 28, 24),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              // The potato on a soft halo.
-              Container(
-                width: halo,
-                height: halo,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(colors: [c.primaryContainer, c.primaryContainer.withValues(alpha: 0)]),
-                ),
-                alignment: Alignment.center,
-                child: PotatoMascot(size: halo * 0.82),
-              ),
-              const SizedBox(height: 18),
+              PotatoMascot(size: size),
+              const SizedBox(height: 20),
               Text(greeting, style: t.labelLarge?.copyWith(color: c.primary, letterSpacing: 0.4)),
               const SizedBox(height: 8),
               Text(s.welcomeTitle, textAlign: TextAlign.center, style: t.headlineMedium),
@@ -248,7 +238,7 @@ class _Welcome extends StatelessWidget {
   }
 }
 
-/// "Works offline" pill under the app name: the promise judges should notice first.
+/// "Works offline" under the app name: the promise judges should notice first.
 class _OfflineBadge extends StatelessWidget {
   const _OfflineBadge({required this.label});
   final String label;
@@ -256,21 +246,17 @@ class _OfflineBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(color: c.primaryContainer, borderRadius: BorderRadius.circular(20)),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Container(width: 6, height: 6, decoration: BoxDecoration(color: c.primary, shape: BoxShape.circle)),
-        const SizedBox(width: 5),
-        Flexible(
-          child: Text(
-            label,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(color: c.onPrimaryContainer, fontWeight: FontWeight.w600),
-          ),
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      Container(width: 6, height: 6, decoration: BoxDecoration(color: c.primary, shape: BoxShape.circle)),
+      const SizedBox(width: 6),
+      Flexible(
+        child: Text(
+          label,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: c.onSurfaceVariant),
         ),
-      ]),
-    );
+      ),
+    ]);
   }
 }
 

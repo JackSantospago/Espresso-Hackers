@@ -13,6 +13,7 @@ import 'package:field_assistant/preview/preview_assistant.dart';
 import 'package:field_assistant/services/assistant.dart';
 import 'package:field_assistant/frontend/chatbot/chat_screen.dart';
 import 'package:field_assistant/frontend/help/help_screen.dart';
+import 'package:field_assistant/frontend/sell/sell_screen.dart';
 import 'package:field_assistant/frontend/shared/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -109,6 +110,17 @@ void main() {
         await tester.tap(find.text(s.save));
         await tester.pumpAndSettle();
         expect(find.text('I planted 50 new trees on the lower plot.'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('sell screen renders', (tester) async {
+        tester.view.physicalSize = const Size(360, 720);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(_wrap(settings, const SellScreen()));
+        await tester.pump();
+        expect(find.text(settings.strings.sellTitle), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
 
