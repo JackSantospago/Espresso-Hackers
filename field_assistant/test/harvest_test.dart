@@ -29,6 +29,11 @@ void main() {
     expect(harvestInputsFrom(['50 trees', 'They flowered in November'], today: DateTime(2026, 10, 3))!.floweredYear, 2025);
   });
 
+  test('both facts in one reply (what a farmer types after "How many trees…?")', () {
+    final i = harvestInputsFrom(['I have 400 coffee trees and they flowered in early March'], today: DateTime(2026, 10, 3))!;
+    expect((i.trees, i.floweredMonth), (400, 3));
+  });
+
   test('harvest questions in all three languages', () {
     expect(isHarvestQuestion('How much coffee will I harvest, and when?'), isTrue);
     expect(isHarvestQuestion('Nitavuna kahawa kiasi gani, na lini?'), isTrue);

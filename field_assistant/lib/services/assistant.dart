@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_edge_ai/flutter_edge_ai.dart';
 
 import '../core/config.dart';
+import '../core/harvest.dart';
 import '../core/strings.dart';
 import 'brain.dart';
 import 'leaf_classifier.dart' if (dart.library.js_interop) 'leaf_classifier_stub.dart';
@@ -176,6 +179,30 @@ class Assistant extends ChangeNotifier {
     status = s.statusSearching;
     _notify();
 
+    // Harvest forecast: asked directly, or the farmer answering our question
+    // about her trees and flowering month. A reply without those facts is
+    // answered like any other question.
+    final followUp = _awaitingHarvestFacts && !isHarvestQuestion(question);
+    if (isHarvestQuestion(question) || followUp) {
+      var handled = true;
+      try {
+        handled = await _harvest(reply, question, followUp: followUp);
+      } catch (e) {
+        reply
+          ..text = s.notSure
+          ..notSure = true
+          ..details = 'harvest error: $e';
+      }
+      if (handled) {
+        busy = false;
+        status = '';
+        _notify();
+        return;
+      }
+      status = s.statusSearching;
+      _notify();
+    }
+
     try {
       // 1. Retrieve from knowledge + memory, and the saved forecast (null when weather is off)
       final hits = await Brain.searchKnowledge(question);
@@ -190,7 +217,7 @@ class Assistant extends ChangeNotifier {
 
       final prompt = '''
 You are an offline farming assistant for smallholder coffee farmers.
-Rules: Answer ONLY from CONTEXT, MEMORY${weather.isEmpty ? '' : ' and WEATHER'} below. Max 5 short sentences, plain words.
+Rules: Answer ONLY from CONTEXT, MEMORY${weather.isEmpty ? '' : ' and WEATHER'} below. Max 3 short sentences, plain words.
 ${weather.isEmpty ? 'If CONTEXT does not contain' : 'If neither CONTEXT nor WEATHER contains'} the answer, reply exactly: "${s.notSure}"
 Never invent prices, numbers or chemical doses. The farmer makes the final decision.
 Reply in the same language as the QUESTION.
@@ -239,6 +266,73 @@ QUESTION: $question''';
       status = '';
       _notify();
     }
+  }
+
+  // -------------------------------------------------------- harvest forecast
+
+  /// We asked for the trees and the flowering month; the next message answers it.
+  bool _awaitingHarvestFacts = false;
+
+  /// "How much will I harvest, and when?" The model reads the farm facts and
+  /// fills the formula's inputs; core/harvest.dart does the arithmetic with
+  /// sourced figures; the answer sentence is fixed, so every number shown is
+  /// exactly what the formula gave. Missing inputs → ask for them, never guess.
+  /// Returns false when this was a reply to our question that still lacks the
+  /// facts, so the caller answers it as a normal question instead.
+  Future<bool> _harvest(ChatTurn reply, String question, {bool followUp = false}) async {
+    final s = strings;
+    _awaitingHarvestFacts = false;
+    status = s.statusCalculating;
+    _notify();
+    final facts = [...(await Brain.memories()).map((m) => m.text), question];
+    final today = DateTime.now();
+
+    // 1. The model extracts the inputs.
+    HarvestInputs? fromModel;
+    final out = await _generate('''
+From the farmer's facts below, find how many coffee trees the farmer has and
+the month (1 to 12) the trees last flowered. Use only the facts. Do not guess.
+Reply with JSON only: {"trees": number or null, "flowered_month": number or null}
+
+FACTS:
+${facts.map((f) => '- $f').join('\n')}''');
+    try {
+      final j = jsonDecode(RegExp(r'\{.*\}', dotAll: true).firstMatch(out)!.group(0)!) as Map<String, dynamic>;
+      final trees = (j['trees'] as num?)?.round();
+      final month = (j['flowered_month'] as num?)?.round();
+      final said = facts.join(' ').replaceAll(',', '');
+      // A number the farmer never said is a guess: reject it.
+      if (trees != null && trees > 0 && said.contains('$trees') && month != null && month >= 1 && month <= 12) {
+        fromModel = HarvestInputs(
+          trees: trees,
+          floweredMonth: month,
+          floweredYear: month <= today.month ? today.year : today.year - 1,
+        );
+      }
+    } catch (_) {/* not JSON: fall back to reading the facts directly */}
+
+    // 2. Cross-check with a plain reading of the same facts.
+    final inputs = fromModel ?? harvestInputsFrom(facts, today: today);
+    if (inputs == null) {
+      if (followUp) return false;
+      reply.text = s.harvestNeed;
+      _awaitingHarvestFacts = true;
+      return true;
+    }
+
+    // 3. The formulas, then a fixed sentence with exactly those numbers.
+    final f = forecastHarvest(inputs);
+    harvestOf[reply] = f;
+    String n(int v) => v.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
+    reply.text = s.harvestSummary(
+        n(f.kgLow), n(f.kgHigh), s.monthsLong[f.readyFrom.month - 1], s.monthsLong[f.readyTo.month - 1]);
+    _notify();
+
+    // 4. Remember what the farmer told us (trees, flowering) for next time.
+    status = s.statusUpdatingMemory;
+    _notify();
+    await _updateMemory(question);
+    return true;
   }
 
   bool _saysNotSure(String answer) {
@@ -300,7 +394,7 @@ QUESTION: $question''';
       final prompt = '''
 You are an offline farming assistant for smallholder farmers.
 A photo check on this phone looked at the farmer's leaf and suggests: ${label.display} (${d.best.percent} sure). It can be wrong.
-Rules: Use ONLY the CONTEXT and MEMORY below. Max 5 short sentences, plain words.
+Rules: Use ONLY the CONTEXT and MEMORY below. Max 3 short sentences, plain words.
 First say how ${label.condition} usually looks, so the farmer can compare it with her leaf. Then say what she can do.
 If CONTEXT says nothing about ${label.condition}, reply exactly: "${s.notSure}"
 Never invent prices, numbers or chemical doses. The farmer makes the final decision.

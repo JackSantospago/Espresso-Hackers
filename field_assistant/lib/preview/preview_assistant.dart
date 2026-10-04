@@ -70,8 +70,8 @@ class PreviewAssistant extends Assistant {
       reply,
       notSure
           ? strings.notSure
-          : 'Prune old stems in rotation and keep the shade light so air moves between the trees. '
-              'Remove berries that fall to the ground after harvest. Check with your extension officer before spraying.',
+          : 'Prune old stems in rotation and keep shade light so air moves. '
+              'Pick up fallen berries after harvest.',
     );
     final match = notSure ? 0.08 : 0.35 + _rng.nextDouble() * 0.3;
     reply
@@ -107,8 +107,6 @@ class PreviewAssistant extends Assistant {
         strings.harvestSummary(n(f.kgLow), n(f.kgHigh), strings.monthsLong[f.readyFrom.month - 1],
             strings.monthsLong[f.readyTo.month - 1]),
       );
-      reply.details = 'trees ${inputs.trees} × $kCherryKgPerTreeLow–$kCherryKgPerTreeHigh kg · '
-          'flowered ${inputs.floweredMonth}/${inputs.floweredYear} + $kMonthsToRipeLow–$kMonthsToRipeHigh months · preview (no model)';
     }
     busy = false;
     status = '';
@@ -135,7 +133,7 @@ class PreviewAssistant extends Assistant {
     final d = fakeDiagnosis(p: confident ? 0.88 : 0.42);
     reply.diagnosis = d;
     if (confident) {
-      await _stream(reply, 'Leaf rust shows yellow-orange powder under the leaf. Prune for airflow and keep trees well fed.');
+      await _stream(reply, 'Leaf rust: yellow-orange powder under the leaf. Prune for airflow.');
       reply
         ..caution = strings.photoCaution
         ..sources = const ['coffee_leaf_rust.md']

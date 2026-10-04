@@ -247,14 +247,9 @@ class _SellScreenState extends State<SellScreen> {
     final t = Theme.of(context).textTheme;
     final c = Theme.of(context).colorScheme;
     return [
-      SectionLabel(s.salesTitle),
+      // The kilos are in the harvest bar above; here the money and each sale.
+      SectionLabel('${s.salesTitle} · ${money(_m.seasonTotal)}'),
       GroupCard(children: [
-        RowTile(
-          icon: Icons.insights_outlined,
-          iconColor: c.primary,
-          title: s.seasonSummary(_m.seasonKg, money(_m.seasonTotal)),
-          titleStyle: t.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
-        ),
         for (final sale in _m.sales)
           RowTile(
             icon: sale.paid ? Icons.check_circle_outline_rounded : Icons.local_shipping_outlined,
@@ -453,8 +448,6 @@ class _OfferSheet extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(child: Text(s.noFees, style: t.bodySmall?.copyWith(color: c.primary, fontWeight: FontWeight.w600))),
           ]),
-          const SizedBox(height: 6),
-          Text(s.marketRef(money(market.referencePrice)), style: t.bodySmall),
           const SizedBox(height: 20),
           Row(children: [
             Expanded(
