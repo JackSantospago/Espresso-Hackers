@@ -58,7 +58,7 @@ class _PotatoPainter extends CustomPainter {
   static const _outline = Color(0xFF6B4423);
   static const _straw = Color(0xFFEBC56B);
   static const _strawDark = Color(0xFFB98B35);
-  static const _band = Color(0xFF3F7D3A);
+  static const _band = Color(0xFF1E5A46);
   static const _wood = Color(0xFF8B5E34);
   static const _metal = Color(0xFF9AA5AE);
 

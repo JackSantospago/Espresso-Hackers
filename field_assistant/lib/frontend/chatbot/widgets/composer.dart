@@ -11,12 +11,14 @@ class Composer extends StatelessWidget {
     required this.enabled,
     required this.onSend,
     required this.onPhoto,
+    this.focusNode,
   });
 
   final TextEditingController controller;
   final bool enabled;
   final VoidCallback onSend;
   final VoidCallback onPhoto;
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +39,7 @@ class Composer extends StatelessWidget {
           children: [
             TextField(
               controller: controller,
+              focusNode: focusNode,
               enabled: enabled,
               minLines: 1,
               maxLines: 5,

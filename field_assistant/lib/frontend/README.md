@@ -30,6 +30,9 @@ small Android, light/dark) with fake data from `../preview/`. If `-d chrome` doe
 use `flutter run -d web-server --web-port 8080 -t lib/main_preview.dart` and open
 http://localhost:8080.
 
+When a text field has focus the frame draws the phone's keyboard and the app shrinks above
+it, like on a real phone (type with your computer keyboard; "return" hides it).
+
 Options go in the page URL, so a link can open a given screen (handy for the demo):
 `http://localhost:8080/?tab=grow&theme=dark&device=se&lang=sw`
 

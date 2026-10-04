@@ -12,6 +12,7 @@ class PreviewDevice {
     required this.platform,
     this.screenRadius = 0,
     this.island = false,
+    this.keyboard = 300,
   });
 
   final String name;
@@ -20,6 +21,9 @@ class PreviewDevice {
   final TargetPlatform platform;
   final double screenRadius;
   final bool island;
+
+  /// Height of the on-screen keyboard (with its suggestion bar) on this phone.
+  final double keyboard;
 }
 
 const previewDevices = [
@@ -30,8 +34,9 @@ const previewDevices = [
     platform: TargetPlatform.iOS,
     screenRadius: 47,
     island: true,
+    keyboard: 336,
   ),
-  PreviewDevice('iPhone SE', Size(375, 667), EdgeInsets.only(top: 20), platform: TargetPlatform.iOS),
+  PreviewDevice('iPhone SE', Size(375, 667), EdgeInsets.only(top: 20), platform: TargetPlatform.iOS, keyboard: 260),
   PreviewDevice(
     'Small Android',
     Size(360, 740),
@@ -57,6 +62,26 @@ class _PhoneFrameState extends State<PhoneFrame> {
   static const _bezel = 12.0;
   var _device = previewDevices[PreviewOptions.device];
 
+  /// A text field has focus, so the phone would show its keyboard.
+  bool _typing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    FocusManager.instance.addListener(_onFocus);
+  }
+
+  @override
+  void dispose() {
+    FocusManager.instance.removeListener(_onFocus);
+    super.dispose();
+  }
+
+  void _onFocus() {
+    final typing = FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<EditableText>() != null;
+    if (typing != _typing && mounted) setState(() => _typing = typing);
+  }
+
   @override
   Widget build(BuildContext context) {
     final d = _device;
@@ -78,7 +103,7 @@ class _PhoneFrameState extends State<PhoneFrame> {
     );
 
     return Material(
-      color: dark ? const Color(0xFF2B2B2B) : const Color(0xFFE6E6E6),
+      color: dark ? const Color(0xFF2B2B2B) : const Color(0xFFECEBE7),
       child: Column(
         children: [
           _controls(context),
@@ -97,11 +122,12 @@ class _PhoneFrameState extends State<PhoneFrame> {
     final mq = MediaQuery.of(context);
     final c = Theme.of(context).colorScheme;
     return MediaQuery(
+      // With the keyboard up the app sees it as a bottom inset, like on the phone.
       data: mq.copyWith(
         size: d.size,
-        padding: d.insets,
+        padding: _typing ? d.insets.copyWith(bottom: 0) : d.insets,
         viewPadding: d.insets,
-        viewInsets: EdgeInsets.zero,
+        viewInsets: EdgeInsets.only(bottom: _typing ? d.keyboard : 0),
         textScaler: TextScaler.noScaling,
       ),
       child: Theme(
@@ -128,6 +154,14 @@ class _PhoneFrameState extends State<PhoneFrame> {
                   height: 37,
                   decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(20)),
                 ),
+              ),
+            if (_typing)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: d.keyboard,
+                child: _Keyboard(device: d, dark: Theme.of(context).brightness == Brightness.dark),
               ),
             if (d.insets.bottom >= 20)
               Positioned(
@@ -201,6 +235,102 @@ class _StatusBar extends StatelessWidget {
           const SizedBox(width: 4),
           Icon(ios ? Icons.battery_full : Icons.battery_6_bar, size: iconSize + 2, color: color),
         ],
+      ),
+    );
+  }
+}
+
+/// A drawing of the phone's keyboard, so the preview shows the real layout
+/// while typing. You type with the computer keyboard; "return" hides it.
+class _Keyboard extends StatelessWidget {
+  const _Keyboard({required this.device, required this.dark});
+  final PreviewDevice device;
+  final bool dark;
+
+  static const _rows = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = dark ? const Color(0xFF2B2B2D) : const Color(0xFFD3D6DC);
+    final key = dark ? const Color(0xFF6B6B6E) : Colors.white;
+    final special = dark ? const Color(0xFF47474A) : const Color(0xFFAEB3BC);
+    final ink = dark ? Colors.white : Colors.black;
+    final homeArea = device.insets.bottom >= 20;
+    TextStyle label(double size) =>
+        TextStyle(color: ink, fontSize: size, decoration: TextDecoration.none, fontWeight: FontWeight.w400);
+
+    Widget cap(Widget child, {Color? color, int flex = 10}) => Expanded(
+          flex: flex,
+          child: Container(
+            height: 42,
+            margin: const EdgeInsets.symmetric(horizontal: 3),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: color ?? key,
+              borderRadius: BorderRadius.circular(5),
+              boxShadow: const [BoxShadow(color: Color(0x55000000), offset: Offset(0, 1))],
+            ),
+            child: child,
+          ),
+        );
+    Widget letters(String row) => Row(children: [for (final ch in row.split('')) cap(Text(ch, style: label(22)))]);
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {}, // taps on the keyboard never reach the app below
+      child: Container(
+        color: bg,
+        child: Column(children: [
+          // Suggestion bar.
+          SizedBox(
+            height: 44,
+            child: Row(children: [
+              for (final (i, w) in ['I', 'The', 'My'].indexed) ...[
+                if (i > 0) Container(width: 1, height: 24, color: special),
+                Expanded(child: Center(child: Text(w, style: label(16)))),
+              ],
+            ]),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 3),
+              child: Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+                letters(_rows[0]),
+                Padding(padding: const EdgeInsets.symmetric(horizontal: 18), child: letters(_rows[1])),
+                Row(children: [
+                  cap(Icon(Icons.arrow_upward_rounded, color: ink, size: 22), color: special, flex: 14),
+                  const SizedBox(width: 8),
+                  for (final ch in _rows[2].split('')) cap(Text(ch, style: label(22))),
+                  const SizedBox(width: 8),
+                  cap(Icon(Icons.backspace_outlined, color: ink, size: 20), color: special, flex: 14),
+                ]),
+                Row(children: [
+                  cap(Text('123', style: label(16)), color: special, flex: 24),
+                  cap(Text('space', style: label(16)), flex: 60),
+                  Expanded(
+                    flex: 24,
+                    child: GestureDetector(
+                      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+                      child: Row(children: [cap(Text('return', style: label(16)), color: special)]),
+                    ),
+                  ),
+                ]),
+              ]),
+            ),
+          ),
+          if (homeArea)
+            SizedBox(
+              height: 40,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 26),
+                child: Row(children: [
+                  Icon(Icons.language_rounded, color: ink.withValues(alpha: 0.7), size: 24),
+                  const Spacer(),
+                  Icon(Icons.mic_none_rounded, color: ink.withValues(alpha: 0.7), size: 24),
+                ]),
+              ),
+            ),
+        ]),
       ),
     );
   }

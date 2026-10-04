@@ -23,6 +23,8 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
+  final _focus = FocusNode();
+  bool _wasReady = false;
 
   Assistant get _a => widget.assistant;
 
@@ -30,14 +32,34 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     _a.addListener(_toBottom);
+    _a.addListener(_focusWhenReady);
+    _focusWhenReady();
   }
 
   @override
   void dispose() {
     _a.removeListener(_toBottom);
+    _a.removeListener(_focusWhenReady);
+    _focus.dispose();
     _input.dispose();
     _scroll.dispose();
     super.dispose();
+  }
+
+  /// Like a new chat with Claude: the keyboard is up as soon as the assistant
+  /// is ready, so the farmer can start typing straight away.
+  void _focusWhenReady() {
+    if (_a.ready && !_wasReady && _a.turns.isEmpty) _startTyping();
+    _wasReady = _a.ready;
+  }
+
+  void _startTyping() => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _a.canSend) _focus.requestFocus();
+      });
+
+  void _newChat() {
+    _a.clearConversation();
+    _startTyping();
   }
 
   void _toBottom() => WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -137,7 +159,7 @@ class _ChatScreenState extends State<ChatScreen> {
             actions: [
               IconButton(
                 tooltip: s.newChat,
-                onPressed: _a.busy || _a.turns.isEmpty ? null : _a.clearConversation,
+                onPressed: _a.busy || _a.turns.isEmpty ? null : _newChat,
                 icon: const Icon(Icons.edit_square),
               ),
             ],
@@ -147,6 +169,7 @@ class _ChatScreenState extends State<ChatScreen> {
               Expanded(child: _body(context)),
               Composer(
                 controller: _input,
+                focusNode: _focus,
                 enabled: _a.canSend,
                 onSend: _send,
                 onPhoto: _pickPhoto,
@@ -219,17 +242,20 @@ class _Welcome extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, box) {
-        // Short screens (iPhone SE, small Androids) get a smaller potato.
-        final size = box.maxHeight < 470 ? 92.0 : 120.0;
+        // Less room (small phones, keyboard up) → smaller potato; very little → no greeting line.
+        final tight = box.maxHeight < 240;
+        final size = tight ? 60.0 : box.maxHeight < 470 ? 92.0 : 120.0;
         return Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(28, 8, 28, 24),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               PotatoMascot(size: size),
-              const SizedBox(height: 20),
-              Text(greeting, style: t.labelLarge?.copyWith(color: c.primary, letterSpacing: 0.4)),
-              const SizedBox(height: 8),
-              Text(s.welcomeTitle, textAlign: TextAlign.center, style: t.headlineMedium),
+              SizedBox(height: tight ? 10 : 20),
+              if (!tight) ...[
+                Text(greeting, style: t.labelLarge?.copyWith(color: c.primary, letterSpacing: 0.4)),
+                const SizedBox(height: 8),
+              ],
+              Text(s.welcomeTitle, textAlign: TextAlign.center, style: tight ? t.headlineSmall : t.headlineMedium),
             ]),
           ),
         );
