@@ -152,8 +152,10 @@ class _GrowScreenState extends State<GrowScreen> {
             icon: const Icon(Icons.my_location, size: 20),
             label: Text(w.setUp),
           ),
-        ] else if (f == null || days.isEmpty)
+        ] else if (f == null)
           Text(w.waiting, style: t.bodyMedium?.copyWith(color: c.onSurfaceVariant))
+        else if (days.isEmpty) // every forecast day is in the past
+          Text(w.stale(w.ago(f.age(now))), style: t.bodyMedium?.copyWith(color: c.tertiary))
         else ...[
           Row(children: [
             for (final d in days.take(3)) Expanded(child: DayColumn(day: d, now: now)),

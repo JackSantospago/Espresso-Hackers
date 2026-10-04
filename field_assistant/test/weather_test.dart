@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:field_assistant/core/config.dart';
+import 'package:field_assistant/core/strings.dart';
+import 'package:field_assistant/services/assistant.dart';
 import 'package:field_assistant/services/weather.dart';
 import 'package:field_assistant/services/weather_risk.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -65,6 +67,15 @@ void main() {
       expect(back.days.map((d) => d.toJson()), f.days.map((d) => d.toJson()));
       expect(back.fetchedAt, f.fetchedAt);
       expect(back.elevation, f.elevation);
+    });
+
+    test('a forecast "from the future" (phone clock changed) is due and stale, not trusted for days', () {
+      final now = DateTime(2026, 10, 4, 12);
+      expect(Forecast(fetchedAt: now.subtract(const Duration(hours: 1)), days: const []).isDue(now), isFalse);
+      expect(Forecast(fetchedAt: now.subtract(kWeatherRefreshEvery), days: const []).isDue(now), isTrue);
+      final future = Forecast(fetchedAt: now.add(const Duration(days: 3)), days: const []);
+      expect(future.isDue(now), isTrue);
+      expect(future.isStale(now), isTrue);
     });
 
     test('drops days that are already past', () {
@@ -188,6 +199,16 @@ void main() {
         expect(riskQuery(r), isNotEmpty);
       }
     });
+  });
+
+  test('"What should I do?" with no warnings answers without the model', () async {
+    final s = S.forLanguage(AppLanguage.en);
+    final a = Assistant(s); // never loaded: no model, no plugins
+    final calm = Forecast(fetchedAt: DateTime.now(), days: _days(_calm(14)));
+    await a.assessWeather(calm, const []);
+    expect(a.weatherAdvice?.text, s.weather.noAlertsAnswer);
+    expect(a.weatherAdviceFor, calm.fetchedAt);
+    expect(a.busy, isFalse);
   });
 
   group('farm location and client', () {

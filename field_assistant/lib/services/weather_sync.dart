@@ -44,10 +44,18 @@ class WeatherSync extends ChangeNotifier {
   AppLifecycleListener? _life;
   bool _disposed = false;
 
+  /// A forced refresh was asked for while another one was running (e.g. the
+  /// farm moved mid-download): run it as soon as the current one ends.
+  bool _forceAgain = false;
+
+  /// Bumped by [turnOff]. A location lookup or download that started before
+  /// it must not save anything afterwards: "Turn off" always wins.
+  int _generation = 0;
+
   bool get enabled => farm != null;
   List<DayForecast> get upcoming => forecast?.upcoming(DateTime.now()) ?? const [];
   List<WeatherAlert> get alerts => findAlerts(upcoming);
-  bool get stale => forecast != null && forecast!.age(DateTime.now()) > kWeatherStaleAfter;
+  bool get stale => forecast != null && forecast!.isStale(DateTime.now());
 
   void _notify() {
     if (!_disposed) notifyListeners();
@@ -64,6 +72,7 @@ class WeatherSync extends ChangeNotifier {
   /// phone comes back online.
   Future<void> start() async {
     await _reload();
+    if (_disposed) return;
     _net = Connectivity().onConnectivityChanged.listen((r) {
       if (r.any((c) => c != ConnectivityResult.none)) refresh();
     });
@@ -82,33 +91,56 @@ class WeatherSync extends ChangeNotifier {
   }
 
   /// Downloads a new forecast when one is due ([force]: now). Offline it
-  /// fails quietly and keeps the last forecast.
+  /// fails quietly and keeps the last forecast. Only one runs at a time (start,
+  /// resume and "back online" often fire together).
   Future<void> refresh({bool force = false}) async {
-    if (updating || locating) return;
-    await _reload(); // the background task may have saved a newer one
-    final f = forecast;
-    if (!enabled || (!force && f != null && f.age(DateTime.now()) < kWeatherRefreshEvery)) return;
-    updating = true;
-    _notify();
-    final r = await Weather.refreshSaved(force: true);
-    if (r == RefreshResult.failed) problem = WeatherProblem.notUpdated;
-    if (r == RefreshResult.updated) problem = WeatherProblem.none;
-    updating = false;
-    await _reload();
+    if (locating) return;
+    if (updating) {
+      _forceAgain |= force;
+      return;
+    }
+    updating = true; // before the first await, so a second call cannot slip in
+    var showSpinner = false;
+    try {
+      await _reload(); // the background task may have saved a newer one
+      final f = forecast;
+      if (!enabled || (!force && f != null && !f.isDue(DateTime.now()))) return;
+      showSpinner = true;
+      _notify();
+      final r = await Weather.refreshSaved(force: true);
+      if (r == RefreshResult.failed) problem = WeatherProblem.notUpdated;
+      if (r == RefreshResult.updated) problem = WeatherProblem.none;
+    } catch (_) {
+      if (showSpinner) problem = WeatherProblem.notUpdated;
+    } finally {
+      updating = false;
+      try {
+        await _reload();
+      } catch (_) {
+        _notify();
+      }
+    }
+    if (_forceAgain && !_disposed) {
+      _forceAgain = false;
+      await refresh(force: true);
+    }
   }
 
   /// Turns weather on, or moves the farm: asks for location permission, then
   /// saves the position rounded to [kLocationStepDeg].
   Future<void> setFarmHere() async {
     if (locating) return;
+    final generation = _generation;
     locating = true;
     problem = WeatherProblem.none;
     _notify();
     try {
       final pos = await _locate();
-      if (pos == null) return;
+      // Turned off while we were looking: do not bring the location back.
+      if (pos == null || generation != _generation) return;
       final here = FarmLocation.rounded(pos.latitude, pos.longitude, DateTime.now());
       final old = await Weather.load();
+      if (generation != _generation) return;
       final sameFarm = old.farm != null && old.farm!.sameSpot(here);
       await Weather.save(WeatherData(farm: here, forecast: sameFarm ? old.forecast : null));
       await _reload();
@@ -117,7 +149,7 @@ class WeatherSync extends ChangeNotifier {
       locating = false;
       _notify();
     }
-    if (enabled) await refresh(force: true);
+    if (enabled && generation == _generation) await refresh(force: true);
   }
 
   Future<Position?> _locate() async {
@@ -160,6 +192,8 @@ class WeatherSync extends ChangeNotifier {
   /// Turns weather off: deletes the saved location and forecast and stops the
   /// background task.
   Future<void> turnOff() async {
+    _generation++;
+    _forceAgain = false;
     try {
       await Workmanager().cancelByUniqueName(kWeatherTask);
     } catch (_) {}

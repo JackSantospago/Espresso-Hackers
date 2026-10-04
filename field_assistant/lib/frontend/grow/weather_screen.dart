@@ -33,9 +33,12 @@ class _WeatherScreenState extends State<WeatherScreen> {
     if (widget.askNow) WidgetsBinding.instance.addPostFrameCallback((_) => _ask());
   }
 
+  /// No warnings: a fixed answer, so it works even without the model.
+  bool get _canAsk => !_assistant.busy && (_assistant.ready || _weather.alerts.isEmpty);
+
   void _ask() {
     final f = _weather.forecast;
-    if (f != null && _assistant.canSend) _assistant.assessWeather(f, _weather.alerts);
+    if (f != null && _canAsk) _assistant.assessWeather(f, _weather.alerts);
   }
 
   @override
@@ -84,7 +87,9 @@ class _WeatherScreenState extends State<WeatherScreen> {
     final days = _weather.upcoming;
     final alerts = _weather.alerts;
     final advice = _assistant.weatherAdvice;
-    final showAdvice = advice != null && f != null && _assistant.weatherAdviceFor == f.fetchedAt;
+    // Advice for an older forecast is hidden, unless it is still being written.
+    final showAdvice =
+        advice != null && f != null && (_assistant.weatherAdviceFor == f.fetchedAt || _assistant.weatherBusy);
     final now = DateTime.now();
 
     return RefreshIndicator(
@@ -125,17 +130,18 @@ class _WeatherScreenState extends State<WeatherScreen> {
               for (final a in alerts) AlertTile(alert: a),
             const SizedBox(height: 12),
             FilledButton.icon(
-              onPressed: _assistant.canSend ? _ask : null,
+              onPressed: _canAsk ? _ask : null,
               icon: const Icon(Icons.health_and_safety_outlined),
               label: Text(w.askWhatToDo),
             ),
-            if (!_assistant.ready)
+            if (!_assistant.ready && alerts.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
-                child: Text(s.loadingModel, textAlign: TextAlign.center, style: t.bodySmall),
+                child: Text(_assistant.state == AssistantState.failed ? s.loadFailed : s.loadingModel,
+                    textAlign: TextAlign.center, style: t.bodySmall),
               ),
             if (showAdvice)
-              MessageBubble(turn: advice, streaming: _assistant.busy, status: _assistant.status),
+              MessageBubble(turn: advice, streaming: _assistant.weatherBusy, status: _assistant.weatherStatus),
             // The days
             _Heading(w.nextDays(days.length)),
             Card(
@@ -158,7 +164,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
           ),
           const SizedBox(height: 4),
           TextButton.icon(
-            onPressed: () => _confirmTurnOff(context),
+            onPressed: _weather.locating ? null : () => _confirmTurnOff(context),
             icon: const Icon(Icons.location_off_outlined, size: 18),
             label: Text(w.turnOff),
           ),

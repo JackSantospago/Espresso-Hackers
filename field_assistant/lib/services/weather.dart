@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
@@ -93,6 +94,19 @@ class Forecast {
   }
 
   Duration age(DateTime now) => now.difference(fetchedAt);
+
+  /// A new download is due: older than [kWeatherRefreshEvery], or "from the
+  /// future" because the phone's clock was changed.
+  bool isDue(DateTime now) {
+    final a = age(now);
+    return a.isNegative || a >= kWeatherRefreshEvery;
+  }
+
+  /// Old enough to warn the farmer (or from the future: cannot be trusted).
+  bool isStale(DateTime now) {
+    final a = age(now);
+    return a.isNegative || a > kWeatherStaleAfter;
+  }
 
   /// Parses an Open-Meteo `/v1/forecast` response with the [_dailyFields] below.
   factory Forecast.fromOpenMeteo(Map<String, dynamic> json, {required DateTime fetchedAt}) {
@@ -209,17 +223,20 @@ abstract final class Weather {
     }
   }
 
-  /// Written to a temp file first, so the app and the background task never
-  /// read half a file.
+  /// Written to a temp file first and then renamed, so nobody reads half a
+  /// file. Each save has its own temp name: the app and the background task
+  /// (another isolate) may save at the same moment.
   static Future<void> save(WeatherData data) async {
     final f = await _file();
-    final tmp = File('${f.path}.tmp');
+    final tmp = File('${f.path}.${DateTime.now().microsecondsSinceEpoch}.${_rng.nextInt(1 << 32)}.tmp');
     await tmp.writeAsString(
       jsonEncode({'farm': data.farm?.toJson(), 'forecast': data.forecast?.toJson()}),
       flush: true,
     );
     await tmp.rename(f.path);
   }
+
+  static final _rng = Random();
 
   /// Turning weather off deletes the location and the forecast.
   static Future<void> clear() async {
@@ -240,7 +257,7 @@ abstract final class Weather {
     final farm = d.farm;
     if (farm == null) return RefreshResult.off;
     final old = d.forecast;
-    if (!force && old != null && old.age(DateTime.now()) < kWeatherRefreshEvery) return RefreshResult.notDue;
+    if (!force && old != null && !old.isDue(DateTime.now())) return RefreshResult.notDue;
     final Forecast f;
     try {
       f = await fetch(farm, client: client);
@@ -250,7 +267,11 @@ abstract final class Weather {
     // The farmer may have turned weather off or moved the farm meanwhile.
     final now = await load();
     if (now.farm == null || !now.farm!.sameSpot(farm)) return RefreshResult.off;
-    await save(WeatherData(farm: now.farm, forecast: f));
+    try {
+      await save(WeatherData(farm: now.farm, forecast: f));
+    } on FileSystemException {
+      return RefreshResult.failed; // storage full or busy: keep the old forecast, try again later
+    }
     return RefreshResult.updated;
   }
 }

@@ -125,15 +125,23 @@ class PreviewAssistant extends Assistant {
     weatherAdvice = reply;
     weatherAdviceFor = forecast.fetchedAt;
     busy = true;
+    weatherBusy = true;
     if (alerts.isEmpty) {
       reply.text = w.noAlertsAnswer;
     } else {
-      await _stream(
-        reply,
-        'Cover young plants and nursery beds on the cold night and take the cover off in the morning. '
-        'Before the heavy rain, clear drainage channels and keep the soil covered with mulch. '
-        'In the long wet spell, check leaves and berries for rust every few days.',
-      );
+      weatherStatus = w.statusChecking;
+      notifyListeners();
+      await Future<void>.delayed(const Duration(milliseconds: 900));
+      weatherStatus = '';
+      const text = 'Cover young plants and nursery beds on the cold night and take the cover off in the morning. '
+          'Before the heavy rain, clear drainage channels and keep the soil covered with mulch. '
+          'In the long wet spell, check leaves and berries for rust every few days.';
+      final words = text.split(' ');
+      for (var i = 0; i < words.length; i++) {
+        reply.text = words.take(i + 1).join(' ');
+        notifyListeners();
+        await Future<void>.delayed(const Duration(milliseconds: 60));
+      }
       reply
         ..sources = const ['soil_types.md', 'coffee_leaf_rust.md']
         ..match = 0.44;
@@ -142,7 +150,7 @@ class PreviewAssistant extends Assistant {
       ..caution = w.caution
       ..details = '${alerts.map(alertForPrompt).join(' ')} · preview (no model)';
     busy = false;
-    status = '';
+    weatherBusy = false;
     notifyListeners();
   }
 
