@@ -15,8 +15,12 @@ import 'widgets/potato_mascot.dart';
 /// The "Ask" tab, laid out like a chat with Claude: a new chat shows the potato
 /// and a greeting; once the farmer sends something it gives way to the conversation.
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key, required this.assistant, this.onOpenSell});
+  const ChatScreen({super.key, required this.assistant, this.onOpenSell, this.active = true});
   final Assistant assistant;
+
+  /// The Ask tab is on screen. When false (another tab is showing) the chat
+  /// never takes the keyboard.
+  final bool active;
 
   /// Opens the Sell tab ("See in Sell" under a harvest forecast).
   final VoidCallback? onOpenSell;
@@ -72,7 +76,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _startTyping() => WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _a.canSend) _focus.requestFocus();
+        if (mounted && widget.active && _a.canSend) _focus.requestFocus();
       });
 
   void _newChat() {

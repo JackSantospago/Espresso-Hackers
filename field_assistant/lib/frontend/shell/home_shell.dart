@@ -39,25 +39,50 @@ class _HomeShellState extends State<HomeShell> {
     final s = context.s;
     if (_assistant == null) {
       _assistant = widget.assistant ?? (Assistant(s)..load());
+      _assistant!.addListener(_askPending);
       _weather = widget.weather ?? (WeatherSync()..start());
     } else {
       _assistant!.strings = s; // language changed
     }
   }
 
-  void _openSell() => setState(() {
-        _tab = 2;
-        _visit++;
-      });
+  /// Switch tabs. The keyboard closes first, so it never stays up over
+  /// another page (the chat stays mounted behind the others).
+  void _goTo(int tab) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() {
+      _tab = tab;
+      _visit++;
+    });
+  }
 
-  /// "Ask about this" from another tab: go to the chat and ask.
+  void _openSell() => _goTo(2);
+
+  /// A question asked from another tab while the assistant is still loading
+  /// (or busy): it is sent as soon as the assistant can take it.
+  String? _pending;
+
+  /// "Ask about this" / "Ask the assistant" from another tab: go to the chat and ask.
   void _ask(String question) {
-    setState(() => _tab = 0);
-    if (_assistant!.canSend) _assistant!.send(question);
+    _goTo(0);
+    if (_assistant!.canSend) {
+      _assistant!.send(question);
+    } else {
+      _pending = question;
+    }
+  }
+
+  void _askPending() {
+    final q = _pending;
+    if (q != null && _assistant!.canSend) {
+      _pending = null;
+      _assistant!.send(q);
+    }
   }
 
   @override
   void dispose() {
+    _assistant?.removeListener(_askPending);
     _assistant?.dispose();
     if (widget.weather == null) _weather?.dispose();
     super.dispose();
@@ -78,17 +103,14 @@ class _HomeShellState extends State<HomeShell> {
 
     return Scaffold(
       // The chat stays mounted (offstage) so its text field and scroll survive tab switches.
-      body: IndexedStack(index: _tab == 0 ? 0 : 1, children: [ChatScreen(assistant: a, onOpenSell: _openSell), other]),
+      body: IndexedStack(index: _tab == 0 ? 0 : 1, children: [ChatScreen(assistant: a, onOpenSell: _openSell, active: _tab == 0), other]),
       bottomNavigationBar: ListenableBuilder(
         listenable: Listenable.merge([a, weather, MarketDemo.instance]),
         builder: (context, _) => DecoratedBox(
           decoration: BoxDecoration(border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant))),
           child: NavigationBar(
           selectedIndex: _tab,
-          onDestinationSelected: (i) => setState(() {
-            _tab = i;
-            _visit++;
-          }),
+          onDestinationSelected: _goTo,
           destinations: [
             NavigationDestination(
               icon: const Icon(Icons.chat_bubble_outline),

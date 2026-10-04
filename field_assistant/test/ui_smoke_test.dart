@@ -200,6 +200,28 @@ void main() {
         expect(tester.takeException(), isNull);
       });
 
+      testWidgets('the keyboard is up on a new chat and closes when switching tabs', (tester) async {
+        tester.view.physicalSize = const Size(360, 720);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        bool typing() =>
+            FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<EditableText>() != null;
+        final data = PreviewFarmData();
+        await tester.pumpWidget(_wrap(
+          settings,
+          HomeShell(assistant: PreviewAssistant(settings.strings, data), data: data, weather: PreviewWeather()),
+        ));
+        await tester.pump();
+        await tester.pump(); // focus is requested after the first frame
+        expect(typing(), isTrue);
+
+        await tester.tap(find.text(settings.strings.tabGrow));
+        await tester.pump();
+        expect(typing(), isFalse);
+        expect(tester.takeException(), isNull);
+      });
+
       testWidgets('bottom bar marks Grow when there are weather warnings', (tester) async {
         tester.view.physicalSize = const Size(360, 720);
         tester.view.devicePixelRatio = 1;
