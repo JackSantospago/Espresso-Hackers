@@ -103,7 +103,7 @@ class _MemoryScreenState extends State<MemoryScreen> {
                           child: ListTile(
                             contentPadding: const EdgeInsets.fromLTRB(16, 6, 4, 6),
                             leading: Icon(Icons.spa_outlined, color: c.onSurfaceVariant),
-                            title: Text(m.text, style: t.bodyLarge),
+                            title: Text(memoryText(s, m), style: t.bodyLarge),
                             subtitle: Text(_date(m.date), style: t.bodySmall),
                             trailing: IconButton(
                               tooltip: s.forget,

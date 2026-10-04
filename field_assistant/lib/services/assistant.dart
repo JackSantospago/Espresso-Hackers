@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_edge_ai/flutter_edge_ai.dart';
@@ -54,6 +55,7 @@ enum AssistantState { loading, ready, failed }
 /// the answer → fail-safe flags → extract durable facts the farmer stated.
 /// Flow per photo: on-device classifier → (not confident | healthy | disease)
 /// → only a confident disease reaches the LLM, grounded on the knowledge base.
+/// A very confident result (≥ [kPhotoMemoryThreshold]) is also noted in My farm.
 /// Flow per weather check: the rules find the warnings → no warnings: fixed
 /// answer, no LLM → warnings: the LLM explains what to do, grounded on the
 /// knowledge base and on what the farmer said about the crops (memory).
@@ -369,7 +371,7 @@ ${facts.map((f) => '- $f').join('\n')}''');
 
       // 2. Fail-safe: not confident, or not one of our crops → no diagnosis, no LLM.
       if (!d.confident) {
-        final guess = d.isOther ? s.photoNotSureOther : s.photoNotSureGuess(d.best.label.display, d.best.percent);
+        final guess = d.isOther ? s.photoNotSureOther : s.photoNotSureGuess(d.best.label.localized(s), d.best.percent);
         reply
           ..text = s.photoNotSure(guess)
           ..notSure = true
@@ -382,18 +384,18 @@ ${facts.map((f) => '- $f').join('\n')}''');
       // 3. Healthy → fixed answer (nothing for the LLM to explain).
       if (label.isHealthy) {
         reply
-          ..text = s.healthy(label.crop.toLowerCase(), d.best.percent)
-          ..details = photoNote;
+          ..text = s.healthy(s.cropName(label.crop), d.best.percent)
+          ..details = photoNote + await _rememberPhoto(d);
         return;
       }
 
       // 4. Confident disease → explain it from the knowledge base, in the farmer's language.
-      status = s.statusLookingUp(label.condition);
+      status = s.statusLookingUp(s.conditionName(label.id, label.condition));
       _notify();
       final query = '${label.crop} ${label.condition} symptoms management $question';
       final hits = await Brain.searchKnowledge(query);
       final mems = await Brain.relevantMemories(query);
-      final asked = question.isEmpty ? s.photoAskDefault(label.crop.toLowerCase()) : question;
+      final asked = question.isEmpty ? s.photoAskDefault(s.cropName(label.crop)) : question;
 
       final prompt = '''
 You are an offline farming assistant for smallholder farmers.
@@ -426,9 +428,10 @@ QUESTION: $asked''';
         ..caution = s.photoCaution
         ..sources = _sources(hits)
         ..match = hits.isEmpty ? 0.0 : hits.first.score
-        ..details = photoNote;
+        ..details = photoNote + await _rememberPhoto(d);
 
-      // Only what the farmer typed goes to memory — never the classifier's guess.
+      // What the farmer typed is mined for facts; the photo result itself was
+      // saved above only as a dated, labelled guess (never as a fact).
       if (question.isNotEmpty) {
         status = s.statusUpdatingMemory;
         _notify();
@@ -577,12 +580,31 @@ ${_context(hits)}''';
 
   // ------------------------------------------------------------------ memory
 
+  /// Notes a very confident photo check in My farm, so later answers know about
+  /// it. One line per crop: a newer photo check of that crop replaces the older
+  /// one, and it never replaces anything the farmer said. Returns a note for
+  /// the "Details" line; a failure here never breaks the photo answer.
+  Future<String> _rememberPhoto(Diagnosis d) async {
+    if (!photoWorthRemembering(d)) return '';
+    try {
+      final prefix = photoMemoryPrefix(d);
+      for (final m in await Brain.memories()) {
+        if (m.id.startsWith(prefix)) await Brain.forget(m.id);
+      }
+      await Brain.remember(photoMemoryText(strings, d, DateTime.now()), merge: false, idPrefix: photoMemoryIdPrefix(d));
+      await refreshMemoryCount();
+      return ' · saved to My farm';
+    } catch (e) {
+      return ' · not saved to My farm: $e';
+    }
+  }
+
   Future<void> _updateMemory(String farmerSaid) async {
     if (farmerSaid.length < 15) return;
     final out = await _generate('''
 Extract lasting facts that the farmer states about themselves, their farm, crops, plots,
 observations or decisions. Ignore questions and greetings. Do not guess.
-Write each fact as a short standalone sentence on its own line starting with "- ".
+Write each fact as a short standalone sentence in ${strings.weather.replyLanguage}, on its own line starting with "- ".
 If there is nothing to remember, write exactly: NONE
 
 Farmer said: "$farmerSaid"''');
@@ -613,4 +635,45 @@ Farmer said: "$farmerSaid"''');
     _model?.close().catchError((Object _) {});
     super.dispose();
   }
+}
+
+// ------------------------------------------------- photo check → My farm
+
+/// Only a confident crop diagnosis that also clears the stricter memory bar.
+bool photoWorthRemembering(Diagnosis d) =>
+    d.confident && d.best.probability >= math.max(kPhotoMemoryThreshold, d.threshold);
+
+/// Id prefix of the photo-check entry for this crop (one per crop).
+String photoMemoryPrefix(Diagnosis d) => 'mem:photo:${d.best.label.crop.toLowerCase()}:';
+
+/// Full id prefix of a new photo-check entry: [photoMemoryPrefix] plus the
+/// label and certainty, so My farm can word it again in another language.
+/// Example: 'mem:photo:coffee:coffee__leaf_rust:91:' (+ a timestamp).
+String photoMemoryIdPrefix(Diagnosis d) =>
+    '${photoMemoryPrefix(d)}${d.best.label.id}:${(d.best.probability * 100).round()}:';
+
+/// The My farm line for a photo check, dated and worded as a guess.
+String photoMemoryText(S s, Diagnosis d, DateTime when) {
+  final date = when.toIso8601String().substring(0, 10);
+  final label = d.best.label;
+  final crop = s.cropName(label.crop);
+  return label.isHealthy
+      ? s.photoMemoryHealthy(date, crop, d.best.percent)
+      : s.photoMemoryProblem(date, crop, s.conditionName(label.id, label.condition), d.best.percent);
+}
+
+/// What My farm shows for a memory, in the farmer's current language.
+/// Photo checks are worded again from their id (see [photoMemoryIdPrefix]), so
+/// they follow a language change; what the farmer said stays in her own words.
+String memoryText(S s, MemoryItem m) {
+  final p = m.id.split(':'); // mem, photo, crop, label id, percent, timestamp
+  if (p.length != 6 || p[0] != 'mem' || p[1] != 'photo') return m.text;
+  final condition = s.leafConditions[p[3]];
+  if (condition == null || int.tryParse(p[4]) == null) return m.text;
+  final date = m.date.toLocal().toIso8601String().substring(0, 10);
+  final crop = s.cropName(p[2]);
+  final pct = '${p[4]}%';
+  return p[3].endsWith('__healthy')
+      ? s.photoMemoryHealthy(date, crop, pct)
+      : s.photoMemoryProblem(date, crop, condition, pct);
 }

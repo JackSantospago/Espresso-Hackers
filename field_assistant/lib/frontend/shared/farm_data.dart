@@ -1,3 +1,4 @@
+import '../../core/strings.dart';
 import '../../services/brain.dart';
 import '../../services/outbox.dart';
 import 'guides.dart';
@@ -14,8 +15,8 @@ class FarmData {
   /// A fact the farmer typed in herself ("Add a note"); same memory the chat uses.
   Future<void> remember(String fact) => Brain.remember(fact);
 
-  /// The sourced guides on the phone (read straight from assets, no models).
-  Future<List<Guide>> guides() => loadGuides();
+  /// The sourced guides on the phone in [language] (read straight from assets, no models).
+  Future<List<Guide>> guides([AppLanguage language = AppLanguage.en]) => loadGuides(null, language);
 
   Future<List<OutboxItem>> outbox() => Outbox.items();
   Future<SendReport> sendPending() => Outbox.sendPending();

@@ -1,0 +1,13 @@
+Protection intégrée des cultures (PIC) et push-pull : lutter contre les ravageurs et les maladies sans danger.
+
+La protection intégrée des cultures (PIC, ou IPM en anglais) consiste à combiner plusieurs méthodes et à n'utiliser les produits chimiques qu'en dernier recours. Les étapes sont les suivantes. Inspectez la culture régulièrement, identifiez correctement le ravageur ou la maladie, apprenez son cycle de vie, décidez si les dégâts sont assez graves pour agir, choisissez la méthode efficace la plus sûre, puis vérifiez ensuite si elle a marché. (Source: Wikipedia)
+
+Prévention : choisissez des variétés adaptées à votre région et résistantes aux maladies locales, pratiquez la rotation et l'association, utilisez des semences et du matériel de plantation sains, enlevez et détruisez les plantes et résidus malades, et gardez les cultures en bonne santé grâce à un sol fertile. (Source: Wikipedia)
+
+Lutte physique et biologique : le ramassage des ravageurs à la main, l'écrasement des pontes, les pièges et les barrières viennent en premier. Protégez les ennemis naturels comme les coccinelles, les guêpes parasites, les araignées, les fourmis et les oiseaux, car les insecticides à large spectre les tuent et peuvent aggraver les problèmes de ravageurs. (Source: Wikipedia; Pacific Pests, Pathogens & Weeds)
+
+Pesticides : si un pesticide est vraiment nécessaire, utilisez un produit homologué pour cette culture et ce ravageur, respectez la dose de l'étiquette, portez des vêtements de protection, éloignez les enfants, et rangez les produits sous clé, loin de la nourriture. Alternez différents types de produits, car les ravageurs deviennent résistants quand le même produit est utilisé encore et encore. Votre conseiller agricole peut vous dire quels produits sont homologués. (Source: Wikipedia)
+
+Le push-pull : mis au point par l'icipe au Kenya pour le maïs et le sorgho. Semez du Desmodium entre les lignes de la culture. Son odeur repousse les papillons des foreurs de tiges, il apporte de l'azote et il freine la mauvaise herbe parasite Striga. Plantez de l'herbe à éléphant (Napier) ou du Brachiaria autour du champ. Elle attire les papillons loin de la culture, et la plupart des larves sur l'herbe à éléphant meurent. Les deux plantes fournissent aussi du fourrage pour les animaux. (Source: Wikipedia)
+
+Résultats du push-pull : des dizaines de milliers de petits agriculteurs au Kenya, en Tanzanie et en Ouganda utilisent le push-pull, et des études signalent des hausses de rendement du maïs d'environ 60 %. Il aide aussi à réduire les dégâts de la légionnaire d'automne. (Source: Wikipedia; Pacific Pests, Pathogens & Weeds)

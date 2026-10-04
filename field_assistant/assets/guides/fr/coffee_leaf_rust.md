@@ -1,0 +1,17 @@
+Rouille du caféier : ce que c'est, comment la reconnaître, comment elle se propage et ce que l'agriculteur peut faire.
+
+La rouille orangée du caféier est causée par le champignon Hemileia vastatrix. Elle ne vit que sur les caféiers. Elle attaque l'arabica comme le robusta et c'est l'une des maladies du café les plus destructrices au monde. Elle a été signalée pour la première fois au Kenya en 1861 et s'est ensuite répandue en Asie, en Afrique et, à partir de 1970, en Amérique. (Source: Wikipedia; Pacific Pests, Pathogens & Weeds)
+
+Symptômes : regardez sous les feuilles. La maladie commence par de petites taches jaune pâle. Elles deviennent des plaques rondes, poudreuses, jaune-orange, de quelques millimètres à environ 1,5 cm de large. La poudre orange, ce sont des millions de spores du champignon. Sur le dessus de la feuille, on voit des taches jaunes puis brunes avec un bord jaune. (Source: Wikipedia; Pacific Pests, Pathogens & Weeds)
+
+Dégâts : les feuilles très infectées tombent tôt. Les arbres chargés de cerises souffrent le plus, car l'arbre nourrit les cerises plutôt que les feuilles, et les branches peuvent dépérir. La perte des feuilles réduit la récolte de la saison suivante. Des pertes de rendement de 15 % à 80 % ont été signalées, selon le lieu et l'année. (Source: Wikipedia; Pacific Pests, Pathogens & Weeds)
+
+Propagation : les spores sont transportées par le vent, par les éclaboussures de pluie, et sur les mains, les vêtements et les outils des personnes qui travaillent au champ. Une spore a besoin d'eau sur la feuille (pluie ou rosée) pour infecter. L'infection est favorisée par des températures d'environ 16 à 28 °C, avec la meilleure germination vers 21 °C. Une seule tache de rouille peut libérer des centaines de milliers de spores pendant plusieurs mois. (Source: Wikipedia)
+
+Rouille et altitude : la maladie est en général plus grave dans les zones de café chaudes, humides et de basse altitude, et pendant la saison des pluies. À très haute altitude, elle pose moins de problèmes. Une fiche du Pacifique indique que les traitements fongicides ne sont en général pas nécessaires au-dessus d'environ 1 700 m. (Source: Pacific Pests, Pathogens & Weeds)
+
+Lutte, partie 1 : la meilleure protection à long terme est de planter des variétés résistantes quand vous replantez. Au Kenya, Batian et Ruiru 11 résistent à la fois à la rouille et à l'anthracnose des baies. Les types Catimor sont aussi résistants. Demandez à votre conseiller agricole ou à votre coopérative quels plants résistants sont disponibles dans votre région. (Source: KALRO; Wikipedia; Pacific Pests, Pathogens & Weeds)
+
+Lutte, partie 2 : taillez pour que l'air circule dans l'arbuste et que les feuilles sèchent vite après la pluie. Gardez un bon espacement entre les arbres. Nourrissez bien les arbres, surtout en azote et en potassium apportés par le fumier, le compost ou l'engrais, car les arbres faibles et trop chargés souffrent le plus. Gardez un ombrage modéré, pas trop dense. (Source: Wikipedia; Pacific Pests, Pathogens & Weeds; Naturland)
+
+Fongicides : les fongicides à base de cuivre protègent les feuilles avant l'infection et s'appliquent en préventif ; les fongicides systémiques (triazoles) peuvent stopper de nouvelles infections. Le produit autorisé, la dose et le moment du traitement doivent être convenus avec votre conseiller agricole ou votre coopérative. Ne traitez pas sans conseil. (Source: Wikipedia; Pacific Pests, Pathogens & Weeds)

@@ -144,28 +144,32 @@ class Brain {
       (await _memFile()).writeAsString(jsonEncode(items.map((m) => m.toJson()).toList()));
 
   /// Adds a fact, or REPLACES the closest existing fact if it is about the same
-  /// thing (e.g. "has 400 trees" -> "has 600 trees").
-  static Future<void> remember(String fact) async {
+  /// thing (e.g. "has 400 trees" -> "has 600 trees"). With `merge: false` the
+  /// fact is only added, never replacing another one (photo checks use this so
+  /// a machine guess never overwrites what the farmer said). [idPrefix] lets a
+  /// caller find its own entries again (e.g. 'mem:photo:coffee:').
+  static Future<void> remember(String fact, {bool merge = true, String idPrefix = 'mem:'}) async {
     fact = fact.trim();
     if (fact.length < 8 || fact.length > 220) return;
     final items = await memories();
     if (items.any((m) => m.text.toLowerCase() == fact.toLowerCase())) return;
 
     await FlutterEdgeAi.getActiveEmbedder();
-    final near = await FlutterEdgeAi.rag.searchSimilar(
-      query: fact,
-      topK: 1,
-      threshold: 0.80, // tune: higher = fewer merges
-      filter: _kind('memory'),
-    );
-    String id;
-    if (near.isNotEmpty) {
-      id = near.first.id;
-      await FlutterEdgeAi.rag.removeDocument(id: id);
-      items.removeWhere((m) => m.id == id);
-    } else {
-      id = 'mem:${DateTime.now().microsecondsSinceEpoch}';
+    if (merge) {
+      final near = await FlutterEdgeAi.rag.searchSimilar(
+        query: fact,
+        topK: 1,
+        threshold: 0.80, // tune: higher = fewer merges
+        filter: _kind('memory'),
+      );
+      if (near.isNotEmpty) {
+        final old = near.first.id;
+        await FlutterEdgeAi.rag.removeDocument(id: old);
+        items.removeWhere((m) => m.id == old);
+      }
     }
+    // Always a fresh id, so a replaced entry never keeps another caller's prefix.
+    final id = '$idPrefix${DateTime.now().microsecondsSinceEpoch}';
 
     final embedder = await FlutterEdgeAi.getActiveEmbedder();
     final vector = await embedder.generateEmbedding(fact, taskType: TaskType.retrievalDocument);

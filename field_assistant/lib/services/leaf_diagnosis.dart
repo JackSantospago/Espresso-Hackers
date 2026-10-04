@@ -2,12 +2,17 @@
 /// on-device classifier and its web stub.
 library;
 
+import '../core/strings.dart';
+
 class LeafLabel {
   const LeafLabel(this.id, this.crop, this.condition);
   final String id, crop, condition;
 
   bool get isHealthy => id.endsWith('__healthy');
   String get display => crop.isEmpty ? condition : '$crop – $condition';
+
+  /// [display] in the farmer's language: "Kahawa – kutu ya majani".
+  String localized(S s) => s.leafLabel(id, crop, condition);
 }
 
 class Guess {

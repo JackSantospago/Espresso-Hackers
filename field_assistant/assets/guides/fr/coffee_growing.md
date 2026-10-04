@@ -1,0 +1,15 @@
+Guide de culture du café : climat, ombrage, plantation, fertilisation, taille et récolte.
+
+Climat : le café arabica pousse le mieux à des températures moyennes d'environ 15 à 24 °C, avec 1 200 à 1 900 mm de pluie répartis sur l'année et une saison sèche de pas plus d'environ trois mois. Sous les tropiques, il est surtout cultivé entre 1 200 et 1 500 m (du niveau de la mer jusqu'à 2 800 m à certains endroits). Il ne survit pas au gel. Le café robusta supporte plus de chaleur et se cultive à plus basse altitude. (Source: Wikipedia; Naturland)
+
+Sol et variétés : le caféier a besoin d'un sol bien drainé, et la matière organique du paillage et du compost le garde productif. Au Kenya, Batian et Ruiru 11 sont des variétés d'arabica recommandées qui résistent à l'anthracnose des baies et à la rouille ; SL28 et SL34 sont des variétés traditionnelles connues pour leur excellente qualité en tasse ; K7 est un robusta pour les basses altitudes. (Source: Wikipedia; KALRO)
+
+Ombrage : l'arabica préfère un ombrage léger ou partiel. Des arbres d'ombrage comme Inga ou Erythrina, et des bananiers à l'étage du milieu, protègent le café de la chaleur et du vent, apportent de la litière de feuilles et (pour les arbres légumineux) de l'azote. Environ la moitié d'ombre est un objectif courant. Un ombrage très dense stresse les plantes et favorise des maladies comme la cercosporiose. (Source: Naturland; Wikipedia)
+
+Plantation et première récolte : les jeunes caféiers fleurissent pour la première fois 3 à 4 ans après la plantation et mettent encore plusieurs années à atteindre leur pleine production. Dans les systèmes biologiques ombragés, Naturland recommande au plus environ 1 000 à 2 500 caféiers par hectare, pour laisser de la place aux arbres d'ombrage. Des cultures vivrières comme le haricot et le maïs peuvent être cultivées entre les jeunes caféiers les premières années. (Source: Wikipedia; Naturland)
+
+Fertilisation et paillage : les cerises de café retirent beaucoup d'azote et de potassium du sol à chaque récolte. Rendez la pulpe et les coques de café sous forme de compost, ajoutez du fumier, et étalez le paillis à la surface du sol plutôt que de l'enfouir, car les racines du caféier sont superficielles. Évitez de biner profondément près des arbres et coupez plutôt les mauvaises herbes au ras du sol. (Source: Naturland)
+
+Taille et rajeunissement : taillez régulièrement après la récolte, en enlevant les branches mortes, malades et trop serrées pour que la lumière et l'air atteignent l'arbuste, ce qui réduit aussi la rouille et d'autres maladies. Les vieux arbres qui produisent peu sont rajeunis par un recépage sévère à environ 40 cm, à peu près tous les 8 à 16 ans. (Source: Naturland; Wikipedia)
+
+Récolte : ne cueillez que les cerises mûres rouges (ou jaunes, pour certaines variétés), en plusieurs passages. Pour l'arabica lavé, commencez le dépulpage le jour même de la cueillette. Séchez les grains sur des claies surélevées propres ou des bâches, jamais sur la terre nue, pour éviter les moisissures. Ramassez les cerises tombées et restantes pour lutter contre le scolyte. (Source: Naturland; Wikipedia)

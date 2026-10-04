@@ -8,6 +8,12 @@ const hfToken = String.fromEnvironment('HF_TOKEN');
 /// Watch the `match` number under each answer and tune.
 const kConfidenceThreshold = 0.2;
 
+/// A leaf photo check is written to My farm (Grow) only at or above this
+/// probability — stricter than the classifier's own advice threshold, because
+/// on real field photos (PlantDoc) it is right only ~55% of the time when it
+/// answers. Never below the threshold in leaf_classifier.json.
+const kPhotoMemoryThreshold = 0.8;
+
 /// Where queued leaf photos are uploaded for review by an extension officer
 /// (multipart POST: photo, note, model_guess). Empty = photos stay on the phone.
 ///   flutter run --dart-define=OUTBOX_URL=https://…

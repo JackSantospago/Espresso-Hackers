@@ -1,4 +1,5 @@
 import 'package:field_assistant/core/harvest.dart';
+import 'package:field_assistant/core/strings.dart';
 import 'package:field_assistant/frontend/sell/market_demo.dart';
 import 'package:field_assistant/preview/fake_data.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -33,6 +34,43 @@ void main() {
   test('both facts in one reply (what a farmer types after "How many trees…?")', () {
     final i = harvestInputsFrom(['I have 400 coffee trees and they flowered in early March'], today: DateTime(2026, 10, 3))!;
     expect((i.trees, i.floweredMonth), (400, 3));
+  });
+
+  test('the facts can be in Kiswahili or French (My farm keeps the farmer\'s language)', () {
+    for (final lang in AppLanguage.values) {
+      final i = harvestInputsFrom(fakeMemories(lang).map((m) => m.text), today: DateTime(2026, 10, 3))!;
+      expect((i.trees, i.floweredMonth), (400, 3), reason: lang.name);
+    }
+    final sw = harvestInputsFrom(['Nina mikahawa 650.', 'Kahawa ilitoa maua Aprili.'], today: DateTime(2026, 10, 3))!;
+    expect((sw.trees, sw.floweredMonth), (650, 4));
+    final fr = harvestInputsFrom(["J'ai 1 200 pieds de café", 'Le maïs a fleuri en mai, mais le café en juin'],
+        today: DateTime(2026, 10, 3))!;
+    expect((fr.trees, fr.floweredMonth), (1200, 5));
+    // A year right before the count is not part of it.
+    expect(harvestInputsFrom(['In 2024 400 trees were planted', 'They flowered in April'], today: DateTime(2026, 10, 3))!.trees,
+        400);
+    expect(harvestInputsFrom(['My maize flowered in April'], today: DateTime(2026, 10, 3)), isNull);
+  });
+
+  test('demo-proof reading of the facts', () {
+    final today = DateTime(2026, 10, 3);
+    // A later note about new trees must not shrink the farm.
+    expect(harvestInputsFrom(['I planted 50 new trees on the lower plot.', 'I have about 400 coffee trees on two plots.',
+        'Our coffee trees flowered in early March.'], today: today)!.trees, 400);
+    // The month that belongs to "flowered", not the last one named.
+    expect(harvestInputsFrom(['400 trees', 'The trees flowered in March, I sprayed in May'], today: today)!.floweredMonth, 3);
+    // "may" as a verb before the flowering does not count.
+    expect(harvestInputsFrom(['400 trees', 'They may flower in April'], today: today)!.floweredMonth, 4);
+    expect(harvestInputsFrom(['I have 400 young coffee trees that flowered in March'], today: today)!.trees, 400);
+  });
+
+  test('other questions do not trigger the forecast', () {
+    expect(isHarvestQuestion('When should I harvest maize?'), isFalse);
+    expect(isHarvestQuestion('How do I improve my yield?'), isFalse);
+    expect(isHarvestQuestion('How do I store my harvest?'), isFalse);
+    expect(isHarvestQuestion('Nitavuna mahindi lini?'), isFalse);
+    expect(isHarvestQuestion('How much will I harvest?'), isTrue);
+    expect(isHarvestQuestion('How much will I harvest, and at what price?'), isTrue); // "price" is not "rice"
   });
 
   test('harvest questions in all three languages', () {

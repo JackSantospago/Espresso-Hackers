@@ -45,21 +45,22 @@ class PreviewApp extends StatelessWidget {
             darkTheme: AppTheme.dark(),
             themeMode: _themeMode.value,
             builder: PreviewOptions.phoneFrame ? (context, child) => PhoneFrame(themeMode: _themeMode, child: child!) : null,
-            home: const _PreviewHome(),
+            home: _PreviewHome(settings: settings),
           ),
         ),
       );
 }
 
 class _PreviewHome extends StatefulWidget {
-  const _PreviewHome();
+  const _PreviewHome({required this.settings});
+  final AppSettings settings;
 
   @override
   State<_PreviewHome> createState() => _PreviewHomeState();
 }
 
 class _PreviewHomeState extends State<_PreviewHome> {
-  final _data = PreviewFarmData();
+  late final _data = PreviewFarmData(language: () => widget.settings.language);
   final _weather = PreviewWeather(on: PreviewOptions.weatherOn);
   PreviewAssistant? _assistant;
 
