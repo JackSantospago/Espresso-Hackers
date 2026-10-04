@@ -107,7 +107,7 @@
       "source": "imagenette",
       "images": 75,
       "top1_accuracy": 1.0,
-      "accuracy_when_confident": NaN,
+      "accuracy_when_confident": null,
       "share_answered": 0.0
     },
     {
