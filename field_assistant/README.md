@@ -29,22 +29,26 @@ lib/
   main.dart                  engine init (LiteRT-LM, embedder, sqlite-vec) → runApp
   app.dart                   MaterialApp, theme, SetupGate (setup screen until models are on disk)
   core/
-    config.dart              model choices, confidence threshold, OUTBOX_URL
+    config.dart              model choices, confidence threshold, OUTBOX_URL, weather limits
     strings.dart             all UI text: English, Kiswahili, Français (add a language = add one S(...))
     app_settings.dart        chosen language (saved on the phone), `context.s` accessor
   services/                  no widgets in here
     assistant.dart           Assistant controller: prompts, grounded answers, "not sure — ask a person"
-                             fail-safes, photo flow, memory extraction, save-for-review
+                             fail-safes, photo flow, memory extraction, save-for-review, weather advice
     brain.dart               chunking/indexing of assets/knowledge, retrieval, memory upsert/forget
     leaf_classifier.dart     on-device TFLite leaf model + preprocessing
     outbox.dart              store-and-forward queue for the extension officer
     model_setup.dart         one-time model download + knowledge indexing
+    weather.dart             Open-Meteo client, forecast model, weather.json store (farm location + forecast)
+    weather_risk.dart        warning rules (frost, heat, heavy rain, wind, storm, hail, dry/wet spell) + prompt text
+    weather_sync.dart        refresh on start / resume / back online, background task, farm location
   frontend/                  one folder per page (see lib/frontend/README.md)
     chatbot/ grow/ sell/ help/ setup/
     shell/                   home_shell: bottom bar (Ask · Grow · Sell · Help)
     shared/                  theme, language picker, farm_data
   main_preview.dart, preview/  UI in the browser on fake data, no models
 test/ui_smoke_test.dart      renders the screens with fake data in every language (`flutter test`)
+test/weather_test.dart       forecast parsing (real saved response in test/fixtures/), warning rules, client
 assets/knowledge/            drop your sourced documents here (blank-line-separated paragraphs become passages)
 ```
 
@@ -55,11 +59,42 @@ assets/knowledge/            drop your sourced documents here (blank-line-separa
   its sources and match strength. Fail-safes are visible blocks, not buried text: a "Not sure — ask a person"
   tag, a weak-match warning, and a "confirm before spraying" caution on photo answers. The photo check shows
   a diagnosis card with the top-3 guesses and the confidence the app needs before it names a disease.
+- **Grow → Weather** (top card): the next three days, the warnings and "What should I do?"; "See all" opens the
+  14-day forecast. A "!" on the Grow tab means there are weather warnings. See "Weather warnings" below.
 - **My farm**: everything the assistant remembers, each fact deletable, plus "Forget everything".
 - **Officer**: photos queued for the extension officer, with status, delete and "Send now".
 - **Help**: language, how it works, where the data lives, what the assistant cannot do, and model info.
 - The UI language also sets the language of the fixed answers and the "not sure" sentence. The LLM answers
   in the language of the question.
+
+## Weather warnings
+**Grow → Weather** gives a 14-day forecast for the farm and warns about extreme weather. **Rules decide and the LLM explains**,
+the same split as the photo check:
+1. **Turn on** (opt-in): the Weather card on Grow opens the Weather screen, which says what is sent and to whom;
+   standing on the farm, the farmer taps "I'm at my farm". The phone's location is rounded to
+   0.05° (≈ 5 km, `kLocationStepDeg`) and only that is saved. The forecast is always for this saved farm, never for wherever
+   the phone is when it finds signal (often town). "I'm at my farm now" moves it; "Turn off weather" deletes it.
+2. **Download whenever there is internet**: on app start, on resume, the moment the connection comes back
+   (`connectivity_plus`), and in the background (`workmanager`, every 3 h with a network constraint — on iOS when iOS
+   allows, often once a day). At most every `kWeatherRefreshEvery`. Free [Open-Meteo](https://open-meteo.com) API, no key.
+   The forecast is kept in `weather.json`; offline, the last one stays.
+3. **Rules** (`weather_risk.dart`, limits in `WeatherLimits` in `config.dart` — starting values, check them with an
+   agronomist): frost, very hot days, heavy rain (one day or 3 days together), strong gusts, thunderstorm, hail, dry spell,
+   long wet + humid spell (fungal disease weather).
+4. **"What should I do?"** (on the Grow card and the Weather screen): no warnings → fixed answer, no LLM. Warnings → the LLM gets the warnings, protection passages
+   from `assets/knowledge/` and what the farmer told it about the crops (My farm memory), and answers in the UI language
+   with sources. Old forecast → warning shown; nothing in the guides → "not sure".
+5. The **Ask** tab also sees a short forecast (3 days + warnings), so "should I spray this week?" can take rain into account.
+
+The advice is only as good as `assets/knowledge/`: dry spells, heavy rain/erosion, wet-weather diseases and (partly)
+heat and frost are covered by the sourced guides; hail and strong wind are not yet, so for those it says "not sure".
+Open-Meteo's free tier is for non-commercial use; a production rollout needs their paid plan or a self-hosted instance.
+
+Permissions: Android `ACCESS_COARSE_LOCATION` only; iOS "when in use" location (`NSLocationWhenInUseUsageDescription`,
+`BYPASS_PERMISSION_LOCATION_ALWAYS` in the Podfile), Background fetch mode and the task id in `BGTaskSchedulerPermittedIdentifiers`.
+Test the iOS background task from Xcode with `e -l objc -- (void)[[BGTaskScheduler sharedScheduler]
+_simulateLaunchForTaskWithIdentifier:@"org.hacknation.fieldassistant.weather"]`; on Android with
+`adb shell cmd jobscheduler run -f org.hacknation.fieldassistant <job-id>` (find it with `adb shell dumpsys jobscheduler`).
 
 ## Offline / side-loading story
 `installModel(...).fromFile(path)` / `.fromAsset(path)` install from a file copied by SD card, Bluetooth or a

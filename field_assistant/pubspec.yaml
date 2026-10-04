@@ -21,6 +21,10 @@ dependencies:
   image_picker: ^1.2.0
   image: ^4.5.0
   http: ^1.2.0
+  # Weather: farm location (once, rounded), "back online" refresh, background refresh
+  geolocator: ^14.1.1
+  connectivity_plus: ^7.3.1    # 7.3.2 needs a dbus version that clashes with geolocator_linux
+  workmanager: ^0.10.10
 
 dev_dependencies:
   flutter_test:

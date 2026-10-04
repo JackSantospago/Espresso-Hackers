@@ -39,5 +39,13 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    # Only "when in use" location is needed (the farm is saved once), so the
+    # app does not have to declare "always" location usage.
+    if target.name == 'geolocator_apple'
+      target.build_configurations.each do |config|
+        defs = config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] || '$(inherited)'
+        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = [*defs, 'BYPASS_PERMISSION_LOCATION_ALWAYS=1']
+      end
+    end
   end
 end

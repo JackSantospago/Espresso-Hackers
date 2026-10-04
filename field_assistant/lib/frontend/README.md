@@ -8,7 +8,8 @@ models directly: pages get their data from `services/` through `Assistant` and
 frontend/
   chatbot/     "Ask" tab: the chat (chat_screen.dart) and its widgets
                (composer, message_bubble, diagnosis_card, potato_mascot)
-  grow/        "Grow" tab: My farm (memory_screen) + Officer (outbox_screen)
+  grow/        "Grow" tab: Weather (weather_screen, weather_widgets), My farm (memory_screen),
+               Guides, Officer (outbox_screen)
   sell/        "Sell" tab: placeholder page, to be designed
   help/        "Help" tab
   setup/       first launch: language, promises, model download
@@ -41,6 +42,7 @@ Options go in the page URL, so a link can open a given screen (handy for the dem
 | `device` | `iphone` · `se` · `android` |
 | `lang` | `en` · `sw` · `fr` |
 | `frame` | `off`: fill the window, no phone |
+| `weather` | `off`: start with weather not turned on (fake forecast otherwise, from `preview/fake_data.dart`) |
 
 ## Design
 `shared/theme.dart` holds the whole look: cream background, white cards with hairline
