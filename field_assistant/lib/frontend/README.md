@@ -45,6 +45,8 @@ Options go in the page URL, so a link can open a given screen (handy for the dem
 | `device` | `iphone` · `se` · `android` |
 | `lang` | `en` · `sw` · `fr` |
 | `frame` | `off`: fill the window, no phone |
+| `ask` | `harvest`: asks "How much coffee will I harvest?" on start |
+| `forecast` | `on`: Sell starts with the harvest forecast already worked out |
 | `weather` | `off`: start with weather not turned on (fake forecast otherwise, from `preview/fake_data.dart`) |
 
 ## Design

@@ -8,6 +8,8 @@
 import 'package:flutter/material.dart';
 
 import 'core/app_settings.dart';
+import 'core/harvest.dart';
+import 'frontend/sell/market_demo.dart';
 import 'preview/phone_frame.dart';
 import 'preview/preview_options.dart';
 import 'preview/preview_assistant.dart';
@@ -64,7 +66,18 @@ class _PreviewHomeState extends State<_PreviewHome> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _assistant ??= PreviewAssistant(context.s, _data);
+    if (_assistant == null) {
+      final s = context.s;
+      _assistant = PreviewAssistant(s, _data);
+      final facts = _data.memoryItems.map((m) => m.text);
+      if (PreviewOptions.forecast) {
+        final inputs = harvestInputsFrom(facts, today: DateTime.now());
+        if (inputs != null) MarketDemo.instance.setForecast(forecastHarvest(inputs));
+      }
+      if (PreviewOptions.askHarvest) {
+        Future<void>.delayed(const Duration(milliseconds: 400), () => _assistant?.send(s.harvestQuestion));
+      }
+    }
   }
 
   @override

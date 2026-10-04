@@ -45,6 +45,11 @@ class _HomeShellState extends State<HomeShell> {
     }
   }
 
+  void _openSell() => setState(() {
+        _tab = 2;
+        _visit++;
+      });
+
   /// "Ask about this" from another tab: go to the chat and ask.
   void _ask(String question) {
     setState(() => _tab = 0);
@@ -66,14 +71,14 @@ class _HomeShellState extends State<HomeShell> {
     final key = ValueKey('$_tab-$_visit');
     final Widget other = switch (_tab) {
       1 => GrowScreen(key: key, assistant: a, data: widget.data, weather: weather, onAsk: _ask),
-      2 => SellScreen(key: key),
+      2 => SellScreen(key: key, onAsk: _ask),
       3 => HelpScreen(key: key, assistant: a),
       _ => const SizedBox.shrink(),
     };
 
     return Scaffold(
       // The chat stays mounted (offstage) so its text field and scroll survive tab switches.
-      body: IndexedStack(index: _tab == 0 ? 0 : 1, children: [ChatScreen(assistant: a), other]),
+      body: IndexedStack(index: _tab == 0 ? 0 : 1, children: [ChatScreen(assistant: a, onOpenSell: _openSell), other]),
       bottomNavigationBar: ListenableBuilder(
         listenable: Listenable.merge([a, weather, MarketDemo.instance]),
         builder: (context, _) => DecoratedBox(

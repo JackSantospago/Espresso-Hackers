@@ -4,6 +4,7 @@
 import 'dart:io';
 
 import 'package:field_assistant/core/app_settings.dart';
+import 'package:field_assistant/core/harvest.dart';
 import 'package:field_assistant/core/strings.dart';
 import 'package:field_assistant/frontend/grow/grow_screen.dart';
 import 'package:field_assistant/frontend/grow/guides_screen.dart';
@@ -249,6 +250,53 @@ void main() {
         expect(market.sales.first.buyer, first.buyer);
         expect(market.sales.first.paid, isFalse); // pickup scheduled
         expect(find.text(s.saleAgreed(first.buyer)), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('harvest: asking in chat shows the forecast card and feeds Sell', (tester) async {
+        tester.view.physicalSize = const Size(360, 1600);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        final s = settings.strings;
+        final a = PreviewAssistant(s, PreviewFarmData());
+        var openedSell = false;
+        await tester.pumpWidget(_wrap(settings, ChatScreen(assistant: a, onOpenSell: () => openedSell = true)));
+        await tester.pump();
+        a.send(s.harvestQuestion);
+        await tester.pump(const Duration(seconds: 10)); // the preview "reads, calculates, explains" with small delays
+        await tester.pumpAndSettle();
+        expect(find.text(s.harvestTitle), findsOneWidget);
+        expect(find.text('800–1,200 kg'), findsOneWidget);
+        expect(MarketDemo.instance.forecast?.kgMid, 1000);
+        expect(tester.takeException(), isNull);
+
+        await tester.ensureVisible(find.text(s.seeInSell));
+        await tester.tap(find.text(s.seeInSell));
+        expect(openedSell, isTrue);
+      });
+
+      testWidgets('sell: the harvest card splits sold, offers and still to sell', (tester) async {
+        tester.view.physicalSize = const Size(360, 1400);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        final s = settings.strings;
+        final market = MarketDemo()
+          ..offerAlertSeen = true
+          ..setForecast(forecastHarvest(const HarvestInputs(trees: 400, floweredMonth: 3, floweredYear: 2026)));
+        await tester.pumpWidget(_wrap(settings, SellScreen(market: market)));
+        await tester.pumpAndSettle();
+        expect(find.text('800–1,200 kg'), findsOneWidget);
+        expect(find.text(s.toSellKg), findsOneWidget);
+        expect((market.soldKg, market.offeredKg, market.toSellKg), (300, 350, 350));
+        expect(tester.takeException(), isNull);
+
+        // Accepting an offer moves its kilos from "Offers" to "Sold".
+        market.accept(market.offers.first);
+        await tester.pumpAndSettle();
+        expect((market.soldKg, market.offeredKg, market.toSellKg), (450, 200, 350));
+        expect(find.text('450 kg'), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
 

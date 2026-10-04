@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../core/app_settings.dart';
+import '../../core/harvest.dart';
+import '../chatbot/widgets/potato_mascot.dart';
+import '../shared/harvest_widgets.dart';
 import '../shared/ui.dart';
 import 'market_demo.dart';
 
@@ -10,10 +13,13 @@ import 'market_demo.dart';
 /// DEMO: the data comes from [MarketDemo] (no marketplace backend yet), and the
 /// page says so with a "Demo" tag.
 class SellScreen extends StatefulWidget {
-  const SellScreen({super.key, this.market});
+  const SellScreen({super.key, this.market, this.onAsk});
 
   /// Defaults to the app-wide demo marketplace.
   final MarketDemo? market;
+
+  /// Ask the assistant (switches to the chat): used for the harvest forecast.
+  final void Function(String question)? onAsk;
 
   @override
   State<SellScreen> createState() => _SellScreenState();
@@ -26,9 +32,13 @@ class _SellScreenState extends State<SellScreen> {
   BuyerOffer? _alert;
   bool _alertIn = false;
 
+  /// Highlight the harvest card if the forecast is new since the last visit.
+  late final bool _forecastIsNew = _m.forecastNew;
+
   @override
   void initState() {
     super.initState();
+    _m.forecastSeen();
     // Like a ride-hailing app: the newest offer slides in a moment after opening.
     if (!_m.offerAlertSeen && _m.offers.isNotEmpty) {
       _m.offerAlertSeen = true;
@@ -75,6 +85,8 @@ class _SellScreenState extends State<SellScreen> {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               children: [
                 PageHeader(title: s.sellTitle, trailing: const _DemoTag()),
+                ..._harvest(context),
+                const SizedBox(height: 24),
                 ..._offers(context),
                 const SizedBox(height: 24),
                 ..._sales(context),
@@ -115,6 +127,83 @@ class _SellScreenState extends State<SellScreen> {
       ),
     );
   }
+
+  /// The season at a glance: how much will grow (from the chat's forecast) and
+  /// how much of it is already sold, on offer, or still to sell.
+  List<Widget> _harvest(BuildContext context) {
+    final s = context.s;
+    final c = Theme.of(context).colorScheme;
+    final t = Theme.of(context).textTheme;
+    final f = _m.forecast;
+    if (f == null) {
+      return [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(children: [
+              const PotatoMascot(size: 48),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(s.askHarvestTitle, style: t.titleMedium),
+                  const SizedBox(height: 2),
+                  Text(s.askHarvestBody, style: t.bodySmall),
+                  if (widget.onAsk != null) ...[
+                    const SizedBox(height: 10),
+                    FilledButton.tonal(
+                      onPressed: () => widget.onAsk!(s.harvestQuestion),
+                      style: FilledButton.styleFrom(minimumSize: const Size(0, 40)),
+                      child: Text(s.askNow),
+                    ),
+                  ],
+                ]),
+              ),
+            ]),
+          ),
+        ),
+      ];
+    }
+    return [
+      SectionLabel(s.harvestTitle, action: s.howWorked, onAction: () => _showWorking(f)),
+      Card(
+        shape: _forecastIsNew
+            ? RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: c.primary, width: 1.5))
+            : null,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Row(children: [
+              Expanded(child: Text(kgRange(f), style: t.headlineSmall)),
+              const EstimateTag(),
+            ]),
+            const SizedBox(height: 2),
+            Text(readyText(context, f), style: t.bodyMedium?.copyWith(color: c.primary, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 16),
+            HarvestBar(total: f.kgMid, sold: _m.soldKg, offered: _m.offeredKg),
+            const SizedBox(height: 12),
+            HarvestLegend(sold: _m.soldKg, offered: _m.offeredKg, toSell: _m.toSellKg),
+          ]),
+        ),
+      ),
+    ];
+  }
+
+  void _showWorking(HarvestForecast f) => showModalBottomSheet<void>(
+        context: context,
+        builder: (context) => SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, mainAxisSize: MainAxisSize.min, children: [
+              Text(kgRange(f), style: Theme.of(context).textTheme.headlineSmall),
+              Text(readyText(context, f), style: Theme.of(context).textTheme.bodyMedium),
+              const SizedBox(height: 18),
+              MonthStrip(forecast: f),
+              const SizedBox(height: 18),
+              HarvestWorking(forecast: f),
+            ]),
+          ),
+        ),
+      );
 
   List<Widget> _offers(BuildContext context) {
     final s = context.s;

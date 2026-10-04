@@ -8,6 +8,8 @@ import '../core/strings.dart';
 ///   chat    demo  (start on a conversation with every kind of message)
 ///   theme   light | dark       device  iphone | se | android
 ///   lang    en | sw | fr       frame   off  (fill the window, no phone)
+///   ask     harvest  (asks "How much coffee will I harvest?" on start)
+///   forecast on  (Sell starts with the harvest forecast already worked out)
 ///   weather off  (start with weather not yet turned on)
 abstract final class PreviewOptions {
   static final Map<String, String> _q = Uri.base.queryParameters;
@@ -33,6 +35,9 @@ abstract final class PreviewOptions {
         'android' => 2,
         _ => 0,
       };
+
+  static bool get askHarvest => _q['ask'] == 'harvest';
+  static bool get forecast => _q['forecast'] == 'on';
 
   static AppLanguage? get language => AppLanguage.values.where((l) => l.name == _q['lang']).firstOrNull;
 }

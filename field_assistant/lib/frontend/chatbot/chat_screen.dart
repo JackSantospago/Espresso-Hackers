@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/app_settings.dart';
+import '../../core/harvest.dart';
 import '../../services/assistant.dart';
 import '../../services/leaf_classifier.dart'
     if (dart.library.js_interop) '../../services/leaf_classifier_stub.dart';
+import '../sell/market_demo.dart';
 import 'widgets/composer.dart';
 import '../shared/language_picker.dart';
 import 'widgets/message_bubble.dart';
@@ -13,8 +15,11 @@ import 'widgets/potato_mascot.dart';
 /// The "Ask" tab, laid out like a chat with Claude: a new chat shows the potato
 /// and a greeting; once the farmer sends something it gives way to the conversation.
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key, required this.assistant});
+  const ChatScreen({super.key, required this.assistant, this.onOpenSell});
   final Assistant assistant;
+
+  /// Opens the Sell tab ("See in Sell" under a harvest forecast).
+  final VoidCallback? onOpenSell;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -33,6 +38,7 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     _a.addListener(_toBottom);
     _a.addListener(_focusWhenReady);
+    _a.addListener(_shareHarvest);
     _focusWhenReady();
   }
 
@@ -40,6 +46,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _a.removeListener(_toBottom);
     _a.removeListener(_focusWhenReady);
+    _a.removeListener(_shareHarvest);
     _focus.dispose();
     _input.dispose();
     _scroll.dispose();
@@ -51,6 +58,17 @@ class _ChatScreenState extends State<ChatScreen> {
   void _focusWhenReady() {
     if (_a.ready && !_wasReady && _a.turns.isEmpty) _startTyping();
     _wasReady = _a.ready;
+  }
+
+  /// A forecast worked out in the chat also feeds the Sell page.
+  void _shareHarvest() {
+    for (final t in _a.turns.reversed) {
+      final f = harvestOf[t];
+      if (f != null) {
+        MarketDemo.instance.setForecast(f);
+        return;
+      }
+    }
   }
 
   void _startTyping() => WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -215,6 +233,7 @@ class _ChatScreenState extends State<ChatScreen> {
               turn: t,
               streaming: streaming,
               status: streaming ? _a.status : '',
+              onOpenSell: widget.onOpenSell,
               onSendForReview: t.reviewPhoto != null && !t.queued && !streaming ? () => _confirmReview(t) : null,
             );
           },

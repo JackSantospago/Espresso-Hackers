@@ -67,6 +67,26 @@ class S {
     required this.statusPaid,
     required this.tipsTitle,
     required this.sellTips,
+    required this.harvestTitle,
+    required this.harvestEstimate,
+    required this.readyWindow,
+    required this.soldKg,
+    required this.offeredKg,
+    required this.toSellKg,
+    required this.howWorked,
+    required this.treesTimesYield,
+    required this.floweredRipe,
+    required this.harvestSources,
+    required this.seeInSell,
+    required this.askHarvestTitle,
+    required this.askHarvestBody,
+    required this.askNow,
+    required this.harvestQuestion,
+    required this.statusCalculating,
+    required this.harvestNeed,
+    required this.harvestSummary,
+    required this.monthsShort,
+    required this.monthsLong,
     required this.sellTitle,
     required this.sellSubtitle,
     required this.promiseTitles,
@@ -234,6 +254,28 @@ class S {
   final String statusPaid;
   final String tipsTitle;
   final List<String> sellTips;
+
+  // Harvest forecast (chat card + Sell chart)
+  final String harvestTitle;
+  final String harvestEstimate;
+  final String Function(String from, String to) readyWindow;
+  final String soldKg;
+  final String offeredKg;
+  final String toSellKg;
+  final String howWorked;
+  final String Function(int trees, String low, String high) treesTimesYield;
+  final String Function(String month, int low, int high) floweredRipe;
+  final String harvestSources;
+  final String seeInSell;
+  final String askHarvestTitle;
+  final String askHarvestBody;
+  final String askNow;
+  final String harvestQuestion;
+  final String statusCalculating;
+  final String harvestNeed;
+  final String Function(String low, String high, String from, String to) harvestSummary;
+  final List<String> monthsShort;
+  final List<String> monthsLong;
 
   // Help (short versions for the main view; the long lists sit under "More details")
   final List<String> promiseTitles, promiseTexts, howShort;
@@ -434,6 +476,26 @@ final S _en = S(
     'Weigh your batch yourself before pickup.',
     'Keep every receipt: your records show how each season went.',
   ],
+  harvestTitle: 'Your harvest',
+  harvestEstimate: 'Estimate',
+  readyWindow: (from, to) => 'Ready $from → $to',
+  soldKg: 'Sold',
+  offeredKg: 'Offers',
+  toSellKg: 'To sell',
+  howWorked: 'How I worked it out',
+  treesTimesYield: (trees, low, high) => '$trees trees × $low–$high kg per tree',
+  floweredRipe: (month, low, high) => 'Flowered in $month, ripe $low–$high months later',
+  harvestSources: 'Yield: Kenyan smallholder average. Ripening: arabica coffee.',
+  seeInSell: 'See in Sell',
+  askHarvestTitle: 'How much will you harvest?',
+  askHarvestBody: 'The assistant works it out from your farm facts.',
+  askNow: 'Ask the assistant',
+  harvestQuestion: 'How much coffee will I harvest, and when?',
+  statusCalculating: 'Calculating your harvest…',
+  harvestNeed: 'To work out your harvest I need two things: how many coffee trees you have, and in which month they flowered.',
+  harvestSummary: (low, high, from, to) => 'From your trees I expect about $low–$high kg of coffee cherry, ready from $from to $to. It is an estimate: rain, disease and care change it.',
+  monthsShort: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+  monthsLong: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
   sellTitle: 'Sell your harvest',
   sellSubtitle: 'Everything to get your harvest to market.',
   promiseTitles: [
@@ -722,6 +784,26 @@ final S _sw = S(
     'Pima mzigo wako mwenyewe kabla haujachukuliwa.',
     'Weka kila risiti: kumbukumbu zako zinaonyesha jinsi kila msimu ulivyokwenda.',
   ],
+  harvestTitle: 'Mavuno yako',
+  harvestEstimate: 'Makadirio',
+  readyWindow: (from, to) => 'Tayari $from → $to',
+  soldKg: 'Imeuzwa',
+  offeredKg: 'Ofa',
+  toSellKg: 'Kuuza',
+  howWorked: 'Jinsi nilivyohesabu',
+  treesTimesYield: (trees, low, high) => 'Miti $trees × kilo $low–$high kwa mti',
+  floweredRipe: (month, low, high) => 'Ilitoa maua $month, huiva baada ya miezi $low–$high',
+  harvestSources: 'Mavuno: wastani wa wakulima wadogo Kenya. Kuiva: kahawa ya arabika.',
+  seeInSell: 'Ona kwenye Uza',
+  askHarvestTitle: 'Utavuna kiasi gani?',
+  askHarvestBody: 'Msaidizi anahesabu kutoka kwa taarifa za shamba lako.',
+  askNow: 'Muulize msaidizi',
+  harvestQuestion: 'Nitavuna kahawa kiasi gani, na lini?',
+  statusCalculating: 'Ninahesabu mavuno yako…',
+  harvestNeed: 'Ili kuhesabu mavuno yako nahitaji mambo mawili: una miti mingapi ya kahawa, na ilitoa maua mwezi gani.',
+  harvestSummary: (low, high, from, to) => 'Kutoka kwa miti yako natarajia takriban kilo $low–$high za cherry ya kahawa, tayari kuanzia $from hadi $to. Ni makadirio: mvua, magonjwa na utunzaji hubadilisha.',
+  monthsShort: ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ago', 'Sep', 'Okt', 'Nov', 'Des'],
+  monthsLong: ['Januari', 'Februari', 'Machi', 'Aprili', 'Mei', 'Juni', 'Julai', 'Agosti', 'Septemba', 'Oktoba', 'Novemba', 'Desemba'],
   sellTitle: 'Uza mavuno yako',
   sellSubtitle: 'Kila kitu cha kufikisha mavuno yako sokoni.',
   promiseTitles: [
@@ -1013,6 +1095,26 @@ final S _fr = S(
     "Pesez votre lot vous-même avant l'enlèvement.",
     "Gardez chaque reçu : vos registres montrent comment s'est passée chaque saison.",
   ],
+  harvestTitle: 'Votre récolte',
+  harvestEstimate: 'Estimation',
+  readyWindow: (from, to) => 'Prête $from → $to',
+  soldKg: 'Vendu',
+  offeredKg: 'Offres',
+  toSellKg: 'À vendre',
+  howWorked: "Comment j'ai calculé",
+  treesTimesYield: (trees, low, high) => '$trees arbres × $low–$high kg par arbre',
+  floweredRipe: (month, low, high) => 'Floraison en $month, mûr $low à $high mois plus tard',
+  harvestSources: 'Rendement : moyenne des petits producteurs kényans. Maturation : café arabica.',
+  seeInSell: 'Voir dans Vendre',
+  askHarvestTitle: 'Combien allez-vous récolter ?',
+  askHarvestBody: "L'assistant le calcule à partir des informations sur votre ferme.",
+  askNow: "Demander à l'assistant",
+  harvestQuestion: 'Combien de café vais-je récolter, et quand ?',
+  statusCalculating: 'Je calcule votre récolte…',
+  harvestNeed: 'Pour calculer votre récolte, il me faut deux choses : combien de caféiers vous avez, et en quel mois ils ont fleuri.',
+  harvestSummary: (low, high, from, to) => "De vos arbres, j'attends environ $low–$high kg de cerises de café, prêtes de $from à $to. C'est une estimation : la pluie, les maladies et l'entretien la font varier.",
+  monthsShort: ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'],
+  monthsLong: ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'],
   sellTitle: 'Vendez votre récolte',
   sellSubtitle: 'Tout pour amener votre récolte au marché.',
   promiseTitles: [

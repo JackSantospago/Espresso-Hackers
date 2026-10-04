@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../../core/harvest.dart';
+
 /// DEMO DATA for the Sell page. There is no marketplace backend yet (one phone,
 /// no buyers), so these offers and sales are made up to show the idea: buyers
 /// make offers, the farmer sees how each compares with a market reference, and
@@ -54,7 +56,7 @@ class MarketDemo extends ChangeNotifier {
     const BuyerOffer(
       id: 'o1',
       buyer: 'Highland Roasters',
-      kg: 200,
+      kg: 150,
       pricePerKg: 104,
       pickupInDays: 3,
       km: 12,
@@ -66,7 +68,7 @@ class MarketDemo extends ChangeNotifier {
     const BuyerOffer(
       id: 'o2',
       buyer: 'Kahawa Bora Co-op',
-      kg: 350,
+      kg: 120,
       pricePerKg: 98,
       pickupInDays: 5,
       km: 6,
@@ -77,7 +79,7 @@ class MarketDemo extends ChangeNotifier {
     const BuyerOffer(
       id: 'o3',
       buyer: 'Mama Grace Traders',
-      kg: 150,
+      kg: 80,
       pricePerKg: 86,
       pickupInDays: 2,
       km: 21,
@@ -87,12 +89,37 @@ class MarketDemo extends ChangeNotifier {
   ];
 
   final List<SaleRecord> sales = [
-    const SaleRecord(buyer: 'Kahawa Bora Co-op', kg: 220, pricePerKg: 92),
-    const SaleRecord(buyer: 'Highland Roasters', kg: 200, pricePerKg: 99),
+    const SaleRecord(buyer: 'Kahawa Bora Co-op', kg: 180, pricePerKg: 92),
+    const SaleRecord(buyer: 'Highland Roasters', kg: 120, pricePerKg: 99),
   ];
 
   /// The slide-in "new offer" card is shown once per app run.
   bool offerAlertSeen = false;
+
+  /// This season's harvest, worked out in the chat (null until the farmer asks).
+  HarvestForecast? forecast;
+
+  /// The forecast arrived since the farmer last opened Sell.
+  bool forecastNew = false;
+
+  void setForecast(HarvestForecast f) {
+    if (identical(f, forecast)) return;
+    forecast = f;
+    forecastNew = true;
+    notifyListeners();
+  }
+
+  void forecastSeen() => forecastNew = false;
+
+  /// Sold or agreed (pickup scheduled), open offers, and what is left to sell.
+  int get soldKg => sales.fold(0, (a, s) => a + s.kg);
+  int get offeredKg => offers.fold(0, (a, o) => a + o.kg);
+  int get toSellKg {
+    final f = forecast;
+    if (f == null) return 0;
+    final left = f.kgMid - soldKg - offeredKg;
+    return left < 0 ? 0 : left;
+  }
 
   int get seasonKg => sales.fold(0, (a, s) => a + s.kg);
   int get seasonTotal => sales.fold(0, (a, s) => a + s.total);

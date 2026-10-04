@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 
 import '../../../core/app_settings.dart';
 import '../../../core/config.dart';
+import '../../../core/harvest.dart';
 import '../../../services/assistant.dart';
+import '../../shared/harvest_widgets.dart';
 import 'diagnosis_card.dart';
 import 'potato_mascot.dart';
 
@@ -11,7 +13,14 @@ import 'potato_mascot.dart';
 /// are plain text across the screen (like a chat with Claude), with their grounding (sources, match strength) and fail-safes
 /// (not sure / weak match / photo caution) shown as distinct, visible blocks.
 class MessageBubble extends StatelessWidget {
-  const MessageBubble({super.key, required this.turn, this.streaming = false, this.status = '', this.onSendForReview});
+  const MessageBubble({
+    super.key,
+    required this.turn,
+    this.streaming = false,
+    this.status = '',
+    this.onSendForReview,
+    this.onOpenSell,
+  });
 
   final ChatTurn turn;
 
@@ -23,6 +32,9 @@ class MessageBubble extends StatelessWidget {
 
   /// Non-null when the farmer can send this photo to the extension officer.
   final VoidCallback? onSendForReview;
+
+  /// "See in Sell" under a harvest forecast.
+  final VoidCallback? onOpenSell;
 
   @override
   Widget build(BuildContext context) => turn.fromUser ? _farmer(context) : _assistant(context);
@@ -66,7 +78,8 @@ class MessageBubble extends StatelessWidget {
     final c = Theme.of(context).colorScheme;
     final t = Theme.of(context).textTheme;
     // Nothing to show yet: the potato is thinking.
-    if (turn.text.isEmpty && turn.diagnosis == null) {
+    final harvest = harvestOf[turn];
+    if (turn.text.isEmpty && turn.diagnosis == null && harvest == null) {
       return _Thinking(status: status.isEmpty ? s.statusThinking : status);
     }
     return Padding(
@@ -93,6 +106,10 @@ class MessageBubble extends StatelessWidget {
                           Text(s.appName, style: t.labelLarge?.copyWith(color: c.onSurfaceVariant)),
                         ]),
                       ),
+                      if (harvest != null) ...[
+                        HarvestCard(forecast: harvest, onOpenSell: streaming ? null : onOpenSell),
+                        const SizedBox(height: 12),
+                      ],
                       if (turn.diagnosis != null) ...[
                         DiagnosisCard(diagnosis: turn.diagnosis!),
                         const SizedBox(height: 10),

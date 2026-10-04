@@ -3,6 +3,8 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
+import '../core/harvest.dart';
+
 import '../services/assistant.dart';
 import '../services/brain.dart';
 import '../services/outbox.dart';
@@ -61,6 +63,7 @@ class PreviewAssistant extends Assistant {
       ..add(ChatTurn(question, fromUser: true))
       ..add(reply);
     busy = true;
+    if (isHarvestQuestion(question)) return _harvest(reply);
     // Questions mentioning "price" get the "not sure" path, everything else a grounded answer.
     final notSure = question.toLowerCase().contains('price');
     await _stream(
@@ -78,6 +81,37 @@ class PreviewAssistant extends Assistant {
       ..match = match
       ..details = 'match ${match.toStringAsFixed(2)} · preview (no model)';
     busy = false;
+    notifyListeners();
+  }
+
+  /// "How much will I harvest?": read the farm facts, run the formulas
+  /// (core/harvest.dart), attach the forecast card, explain it in words.
+  Future<void> _harvest(ChatTurn reply) async {
+    status = strings.statusSearching;
+    notifyListeners();
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+    status = strings.statusCalculating;
+    notifyListeners();
+    await Future<void>.delayed(const Duration(milliseconds: 900));
+    final inputs = harvestInputsFrom(data.memoryItems.map((m) => m.text), today: DateTime.now());
+    if (inputs == null) {
+      await _stream(reply, strings.harvestNeed);
+    } else {
+      final f = forecastHarvest(inputs);
+      harvestOf[reply] = f;
+      status = '';
+      notifyListeners();
+      String n(int v) => v.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
+      await _stream(
+        reply,
+        strings.harvestSummary(n(f.kgLow), n(f.kgHigh), strings.monthsLong[f.readyFrom.month - 1],
+            strings.monthsLong[f.readyTo.month - 1]),
+      );
+      reply.details = 'trees ${inputs.trees} × $kCherryKgPerTreeLow–$kCherryKgPerTreeHigh kg · '
+          'flowered ${inputs.floweredMonth}/${inputs.floweredYear} + $kMonthsToRipeLow–$kMonthsToRipeHigh months · preview (no model)';
+    }
+    busy = false;
+    status = '';
     notifyListeners();
   }
 

@@ -48,6 +48,7 @@ List<MemoryItem> fakeMemories() => [
       MemoryItem('mem:1', 'I have about 400 coffee trees on two plots.', DateTime(2026, 10, 2, 9, 30)),
       MemoryItem('mem:2', 'The lower plot is shaded by banana plants.', DateTime(2026, 10, 1, 17, 5)),
       MemoryItem('mem:3', 'I saw orange powder on leaves in the upper plot last week.', DateTime(2026, 9, 28, 8, 12)),
+      MemoryItem('mem:4', 'Our coffee trees flowered in early March.', DateTime(2026, 3, 9, 7, 40)),
     ];
 
 /// 14 days from today in a coffee highland at the start of the rains: a cold
