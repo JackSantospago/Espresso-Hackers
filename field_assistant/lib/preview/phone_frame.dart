@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'open_link.dart';
 import 'preview_options.dart';
 
 /// A phone the preview can be shown in: screen size in logical pixels and the
@@ -108,10 +109,11 @@ class _PhoneFrameState extends State<PhoneFrame> {
           _controls(context),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: FittedBox(child: phone),
             ),
           ),
+          const _DemoNote(),
         ],
       ),
     );
@@ -200,6 +202,48 @@ class _PhoneFrameState extends State<PhoneFrame> {
             onSelected: (_) => widget.themeMode.value = dark ? ThemeMode.light : ThemeMode.dark,
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Under the phone: this online preview has no AI model, the app does.
+class _DemoNote extends StatelessWidget {
+  const _DemoNote();
+
+  static const _readme = 'https://github.com/JackSantospago/Espresso-Hackers#readme';
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
+    final t = Theme.of(context).textTheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+          decoration: BoxDecoration(color: c.tertiaryContainer, borderRadius: BorderRadius.circular(12)),
+          child: Row(children: [
+            Icon(Icons.info_outline, color: c.onTertiaryContainer),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'This is a simplified online version that does not have access to the AI model and only serves '
+                'demonstration purposes. If you want the full capabilities, please download the app. '
+                'Instructions are in the README.',
+                style: t.bodySmall?.copyWith(color: c.onTertiaryContainer),
+              ),
+            ),
+            const SizedBox(width: 4),
+            TextButton.icon(
+              onPressed: () => openLink(_readme),
+              style: TextButton.styleFrom(foregroundColor: c.onTertiaryContainer),
+              icon: const Icon(Icons.open_in_new, size: 16),
+              label: const Text('README'),
+            ),
+          ]),
+        ),
       ),
     );
   }
